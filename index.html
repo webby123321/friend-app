@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>朋友圈</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #F5F4F0;
+  --surface: #FFFFFF;
+  --surface2: #EDECEA;
+  --border: #E0DDD8;
+  --text: #1C1B18;
+  --text-muted: #72706A;
+  --text-hint: #A8A49E;
+  --accent: #2D6A4F;
+  --accent-light: #E8F4EE;
+  --accent2: #B7985A;
+  --accent2-light: #FAF3E7;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --font: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── Pages ── */
+.page { display: none; min-height: 100vh; }
+.page.active { display: block; }
+
+/* ── Top Bar ── */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.topbar-title { font-size: 17px; font-weight: 600; flex: 1; letter-spacing: -0.3px; }
+
+.back-btn {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 15px; color: var(--accent); cursor: pointer;
+  border: none; background: none; padding: 4px 0;
+}
+
+/* ── Category Tabs ── */
+.categories {
+  padding: 16px 16px 8px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+
+.cat-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font);
+}
+
+.cat-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Cards Grid ── */
+.cards-grid {
+  padding: 8px 16px 100px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.person-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.person-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.person-card:active { transform: translateY(0); }
+
+.card-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 18px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+
+.card-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+
+.card-time {
+  font-size: 11px; color: var(--text-hint);
+  display: flex; align-items: center; gap: 3px;
+}
+
+.card-cat-dot {
+  position: absolute; top: 12px; right: 12px;
+  width: 7px; height: 7px; border-radius: 50%;
+}
+
+/* ── FAB ── */
+.fab {
+  position: fixed; bottom: 24px; right: 20px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 24px; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(45,106,79,0.4);
+  z-index: 40;
+  transition: transform 0.15s;
+}
+
+.fab:active { transform: scale(0.93); }
+
+/* ── Person Detail Page ── */
+.person-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.person-avatar-lg {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--accent-light); color: var(--accent);
+  font-size: 22px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+
+.person-name-lg { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.person-cat-tag {
+  display: inline-block; margin-top: 4px;
+  font-size: 12px; padding: 2px 8px; border-radius: 20px;
+  background: var(--accent-light); color: var(--accent); font-weight: 500;
+}
+
+/* ── Section ── */
+.section { padding: 16px 16px 0; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+
+.add-note-btn {
+  font-size: 13px; color: var(--accent); cursor: pointer;
+  border: none; background: none; font-family: var(--font);
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* ── Notes ── */
+.notes-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+.note-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  position: relative;
+}
+
+.note-time { font-size: 11px; color: var(--text-hint); margin-bottom: 5px; }
+.note-text { font-size: 14px; line-height: 1.65; color: var(--text); white-space: pre-wrap; word-break: break-all; }
+
+.note-actions {
+  display: flex; gap: 8px; margin-top: 8px;
+  border-top: 1px solid var(--border); padding-top: 8px;
+}
+
+.note-action-btn {
+  font-size: 12px; color: var(--text-hint); cursor: pointer;
+  border: none; background: none; font-family: var(--font); padding: 0;
+}
+
+.note-action-btn:hover { color: var(--text); }
+.note-action-btn.danger:hover { color: #E53935; }
+
+/* ── Activity items ── */
+.activity-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.activity-item:hover { border-color: var(--accent2); border-left-color: var(--accent2); }
+
+.activity-date { font-size: 11px; color: var(--text-hint); margin-bottom: 3px; }
+.activity-title { font-size: 14px; font-weight: 500; }
+.activity-place { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── Empty state ── */
+.empty {
+  text-align: center; padding: 32px 20px;
+  color: var(--text-hint); font-size: 13px;
+}
+
+/* ── Modal / Sheet ── */
+.overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.45);
+  display: none; align-items: flex-end; justify-content: center;
+}
+
+.overlay.open { display: flex; }
+
+.sheet {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0 0 40px;
+}
+
+.sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 10px auto 0;
+}
+
+.sheet-title {
+  font-size: 17px; font-weight: 600;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet-body { padding: 16px; }
+
+/* ── Form elements ── */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; letter-spacing: 0.04em; }
+
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 15px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  transition: border-color 0.15s;
+}
+
+.form-textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); background: var(--surface); }
+
+/* ── Tag people ── */
+.tag-section { margin-bottom: 14px; }
+.tag-cat-header {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  margin: 10px 0 6px; letter-spacing: 0.04em;
+}
+
+.tag-people { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.tag-person {
+  padding: 5px 12px; border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--text-muted);
+  font-size: 13px; cursor: pointer;
+  transition: all 0.12s; font-family: var(--font);
+}
+
+.tag-person.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Buttons ── */
+.btn-row { display: flex; gap: 8px; margin-top: 4px; }
+
+.btn {
+  flex: 1; padding: 12px;
+  border-radius: var(--radius);
+  font-size: 15px; font-weight: 600;
+  cursor: pointer; border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--text);
+  font-family: var(--font); transition: background 0.12s;
+}
+
+.btn:active { opacity: 0.8; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Activities page ── */
+.activity-full-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.activity-full-item:hover { border-color: var(--accent2); }
+.activity-people { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+
+.people-chip {
+  font-size: 12px; padding: 2px 8px;
+  background: var(--accent2-light); color: var(--accent2);
+  border-radius: 20px; font-weight: 500;
+}
+
+/* ── Bottom nav ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 40;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-tab {
+  flex: 1; padding: 10px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer; border: none; background: none; font-family: var(--font);
+  color: var(--text-hint); transition: color 0.12s;
+}
+
+.nav-tab.active { color: var(--accent); }
+.nav-tab svg { flex-shrink: 0; }
+.nav-tab span { font-size: 10px; font-weight: 500; }
+
+/* ── Responsive ── */
+@media (min-width: 600px) {
+  .cards-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .sheet { border-radius: 16px; margin: auto; max-height: 80vh; }
+  .overlay { align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ PAGE: HOME ══ -->
+<div class="page active" id="page-home">
+  <div class="topbar">
+    <div class="topbar-title">朋友圈</div>
+    <button class="add-note-btn" onclick="openAddPerson()">＋ 新增</button>
+  </div>
+
+  <div class="categories" id="cat-tabs"></div>
+
+  <div class="cards-grid" id="cards-grid"></div>
+
+  <nav class="bottom-nav">
+    <button class="nav-tab active" onclick="showTab('home', this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      <span>朋友圈</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('activities', this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>活動</span>
+    </button>
+  </nav>
+
+  <button class="fab" onclick="openAddActivity()" style="bottom:80px" title="記錄活動">
+    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- ══ PAGE: PERSON ══ -->
+<div class="page" id="page-person">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      返回
+    </button>
+    <div class="topbar-title" id="person-topbar-name"></div>
+    <button class="add-note-btn" onclick="openEditPerson()">編輯</button>
+  </div>
+
+  <div class="person-header">
+    <div class="person-avatar-lg" id="person-avatar"></div>
+    <div class="person-name-lg" id="person-name"></div>
+    <span class="person-cat-tag" id="person-cat"></span>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">近況記錄</div>
+      <button class="add-note-btn" onclick="openAddNote()">＋ 新增</button>
+    </div>
+    <div class="notes-list" id="notes-list"></div>
+  </div>
+
+  <div class="section" style="padding-bottom:100px">
+    <div class="section-header">
+      <div class="section-title">一起的活動</div>
+    </div>
+    <div id="person-activities"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: ACTIVITIES ══ -->
+<div class="page" id="page-activities">
+  <div class="topbar">
+    <div class="topbar-title">活動記錄</div>
+    <button class="add-note-btn" onclick="openAddActivity()">＋ 新增</button>
+  </div>
+  <div style="padding:12px 16px 100px" id="activities-list"></div>
+
+  <nav class="bottom-nav">
+    <button class="nav-tab" onclick="showTab('home', this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      <span>朋友圈</span>
+    </button>
+    <button class="nav-tab active" onclick="showTab('activities', this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>活動</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ══ SHEETS ══ -->
+
+<!-- Add/Edit Person -->
+<div class="overlay" id="sheet-person">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-person-title">新增聯絡人</div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label class="form-label">姓名 *</label>
+        <input class="form-input" id="f-name" placeholder="輸入姓名">
+      </div>
+      <div class="form-group">
+        <label class="form-label">分類 *</label>
+        <select class="form-select" id="f-cat">
+          <option value="高中">高中</option>
+          <option value="大學電機">大學電機</option>
+          <option value="大學管樂">大學管樂</option>
+          <option value="研究所">研究所</option>
+          <option value="工作">工作</option>
+          <option value="親戚">親戚</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="closeSheet('sheet-person')">取消</button>
+        <button class="btn btn-primary" onclick="savePerson()">儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Note -->
+<div class="overlay" id="sheet-note">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-note-title">新增近況</div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label class="form-label">內容</label>
+        <textarea class="form-textarea" id="f-note" placeholder="記錄一下他最近的狀況…&#10;&#10;例如：換工作了、姐姐生病、最近壓力很大"></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="closeSheet('sheet-note')">取消</button>
+        <button class="btn btn-primary" onclick="saveNote()">儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Activity -->
+<div class="overlay" id="sheet-activity">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">記錄活動</div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label class="form-label">日期</label>
+        <input class="form-input" type="date" id="f-act-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">地點</label>
+        <input class="form-input" id="f-act-place" placeholder="例如：台北、新竹">
+      </div>
+      <div class="form-group">
+        <label class="form-label">做了什麼</label>
+        <input class="form-input" id="f-act-what" placeholder="例如：吃飯、看電影、聚會">
+      </div>
+      <div class="form-group">
+        <label class="form-label">標記的人</label>
+        <div id="tag-people-list"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="closeSheet('sheet-activity')">取消</button>
+        <button class="btn btn-primary" onclick="saveActivity()">儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Storage ──
+const KEY_PEOPLE = 'fcc_people';
+const KEY_NOTES  = 'fcc_notes';
+const KEY_ACTS   = 'fcc_acts';
+
+let people     = JSON.parse(localStorage.getItem(KEY_PEOPLE) || '[]');
+let notes      = JSON.parse(localStorage.getItem(KEY_NOTES)  || '[]');
+let activities = JSON.parse(localStorage.getItem(KEY_ACTS)   || '[]');
+
+function save() {
+  localStorage.setItem(KEY_PEOPLE, JSON.stringify(people));
+  localStorage.setItem(KEY_NOTES,  JSON.stringify(notes));
+  localStorage.setItem(KEY_ACTS,   JSON.stringify(activities));
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ── State ──
+const CATS = ['全部','高中','大學電機','大學管樂','研究所','工作','親戚'];
+const CAT_COLORS = { '高中':'#3D7EAA','大學電機':'#2D6A4F','大學管樂':'#9B5DE5','研究所':'#E07A5F','工作':'#B7985A','親戚':'#E53935' };
+
+let currentCat   = '全部';
+let currentPage  = 'home';
+let currentPerson = null;
+let editingNoteId = null;
+let editingPersonId = null;
+
+// ── Routing ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  currentPage = id;
+  window.scrollTo(0, 0);
+}
+
+function showTab(tab, el) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'home') { showPage('home'); renderHome(); }
+  else { showPage('activities'); renderActivities(); }
+}
+
+function goBack() {
+  showPage('home');
+  renderHome();
+}
+
+// ── Helpers ──
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (d > 365) return Math.floor(d/365) + ' 年前';
+  if (d > 30)  return Math.floor(d/30) + ' 個月前';
+  if (d > 0)   return d + ' 天前';
+  if (h > 0)   return h + ' 小時前';
+  if (m > 0)   return m + ' 分鐘前';
+  return '剛剛';
+}
+
+function fmtDate(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function fmtDateTime(ts) {
+  const d = new Date(ts);
+  return `${fmtDate(ts)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function initial(name) { return name ? name[0] : '?'; }
+function escHTML(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function lastNoteTime(personId) {
+  const ns = notes.filter(n => n.personId === personId);
+  if (!ns.length) return null;
+  return Math.max(...ns.map(n => n.createdAt));
+}
+
+// ── HOME ──
+function renderHome() {
+  // Category tabs
+  const tabEl = document.getElementById('cat-tabs');
+  tabEl.innerHTML = CATS.map(c => `
+    <button class="cat-btn ${c === currentCat ? 'active' : ''}" onclick="setCat('${c}')">${c}</button>
+  `).join('');
+
+  // Cards
+  const grid = document.getElementById('cards-grid');
+  let list = currentCat === '全部' ? people : people.filter(p => p.cat === currentCat);
+  list = [...list].sort((a,b) => {
+    const ta = lastNoteTime(a.id) || a.createdAt;
+    const tb = lastNoteTime(b.id) || b.createdAt;
+    return tb - ta;
+  });
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">還沒有聯絡人<br>點右上角「＋ 新增」開始吧</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(p => {
+    const last = lastNoteTime(p.id);
+    const color = CAT_COLORS[p.cat] || '#888';
+    return `
+    <div class="person-card" onclick="openPerson('${p.id}')">
+      <div class="card-cat-dot" style="background:${color}"></div>
+      <div class="card-avatar" style="background:${color}22;color:${color}">${initial(p.name)}</div>
+      <div class="card-name">${escHTML(p.name)}</div>
+      <div class="card-time">
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        ${last ? timeAgo(last) : '尚無記錄'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setCat(c) {
+  currentCat = c;
+  renderHome();
+}
+
+// ── PERSON PAGE ──
+function openPerson(id) {
+  currentPerson = people.find(p => p.id === id);
+  if (!currentPerson) return;
+  const color = CAT_COLORS[currentPerson.cat] || '#888';
+
+  document.getElementById('person-topbar-name').textContent = currentPerson.name;
+  document.getElementById('person-name').textContent = currentPerson.name;
+  document.getElementById('person-cat').textContent = currentPerson.cat;
+  document.getElementById('person-avatar').textContent = initial(currentPerson.name);
+  document.getElementById('person-avatar').style.background = color + '22';
+  document.getElementById('person-avatar').style.color = color;
+
+  renderNotes();
+  renderPersonActivities();
+  showPage('person');
+}
+
+function renderNotes() {
+  const list = notes
+    .filter(n => n.personId === currentPerson.id)
+    .sort((a,b) => b.createdAt - a.createdAt);
+
+  const el = document.getElementById('notes-list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">還沒有近況記錄<br>點右上角「＋ 新增」</div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(n => `
+    <div class="note-item">
+      <div class="note-time">${fmtDateTime(n.createdAt)}</div>
+      <div class="note-text">${escHTML(n.text)}</div>
+      <div class="note-actions">
+        <button class="note-action-btn" onclick="openEditNote('${n.id}')">編輯</button>
+        <button class="note-action-btn danger" onclick="deleteNote('${n.id}')">刪除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPersonActivities() {
+  const acts = activities
+    .filter(a => a.people && a.people.includes(currentPerson.id))
+    .sort((a,b) => b.date - a.date);
+
+  const el = document.getElementById('person-activities');
+  if (!acts.length) {
+    el.innerHTML = `<div class="empty">還沒有一起的活動記錄</div>`;
+    return;
+  }
+
+  el.innerHTML = acts.map(a => `
+    <div class="activity-item">
+      <div class="activity-date">${fmtDate(a.date)}</div>
+      <div class="activity-title">${escHTML(a.what)}</div>
+      ${a.place ? `<div class="activity-place">📍 ${escHTML(a.place)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── ACTIVITIES PAGE ──
+function renderActivities() {
+  const list = [...activities].sort((a,b) => b.date - a.date);
+  const el = document.getElementById('activities-list');
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">還沒有活動記錄<br>點右上角「＋ 新增」</div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(a => {
+    const tagged = (a.people || []).map(pid => {
+      const p = people.find(x => x.id === pid);
+      return p ? `<span class="people-chip">${escHTML(p.name)}</span>` : '';
+    }).join('');
+
+    return `
+    <div class="activity-full-item">
+      <div class="activity-date">${fmtDate(a.date)}</div>
+      <div class="activity-title">${escHTML(a.what)}</div>
+      ${a.place ? `<div class="activity-place">📍 ${escHTML(a.place)}</div>` : ''}
+      ${tagged ? `<div class="activity-people">${tagged}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── SHEETS ──
+function openSheet(id) { document.getElementById(id).classList.add('open'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+
+// Person sheet
+function openAddPerson() {
+  editingPersonId = null;
+  document.getElementById('sheet-person-title').textContent = '新增聯絡人';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-cat').value = '高中';
+  openSheet('sheet-person');
+}
+
+function openEditPerson() {
+  if (!currentPerson) return;
+  editingPersonId = currentPerson.id;
+  document.getElementById('sheet-person-title').textContent = '編輯聯絡人';
+  document.getElementById('f-name').value = currentPerson.name;
+  document.getElementById('f-cat').value = currentPerson.cat;
+  openSheet('sheet-person');
+}
+
+function savePerson() {
+  const name = document.getElementById('f-name').value.trim();
+  const cat  = document.getElementById('f-cat').value;
+  if (!name) { document.getElementById('f-name').focus(); return; }
+
+  if (editingPersonId) {
+    const idx = people.findIndex(p => p.id === editingPersonId);
+    if (idx >= 0) { people[idx].name = name; people[idx].cat = cat; }
+    save(); closeSheet('sheet-person');
+    currentPerson = people[idx];
+    openPerson(editingPersonId);
+  } else {
+    people.push({ id: uid(), name, cat, createdAt: Date.now() });
+    save(); closeSheet('sheet-person'); renderHome();
+  }
+}
+
+// Note sheet
+function openAddNote() {
+  editingNoteId = null;
+  document.getElementById('sheet-note-title').textContent = '新增近況';
+  document.getElementById('f-note').value = '';
+  openSheet('sheet-note');
+  setTimeout(() => document.getElementById('f-note').focus(), 300);
+}
+
+function openEditNote(id) {
+  const n = notes.find(x => x.id === id);
+  if (!n) return;
+  editingNoteId = id;
+  document.getElementById('sheet-note-title').textContent = '編輯近況';
+  document.getElementById('f-note').value = n.text;
+  openSheet('sheet-note');
+}
+
+function saveNote() {
+  const text = document.getElementById('f-note').value.trim();
+  if (!text) return;
+
+  if (editingNoteId) {
+    const idx = notes.findIndex(n => n.id === editingNoteId);
+    if (idx >= 0) notes[idx].text = text;
+  } else {
+    notes.push({ id: uid(), personId: currentPerson.id, text, createdAt: Date.now() });
+  }
+
+  save(); closeSheet('sheet-note'); renderNotes();
+}
+
+function deleteNote(id) {
+  if (!confirm('確定刪除這條記錄？')) return;
+  notes = notes.filter(n => n.id !== id);
+  save(); renderNotes();
+}
+
+// Activity sheet
+function openAddActivity() {
+  document.getElementById('f-act-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-act-place').value = '';
+  document.getElementById('f-act-what').value = '';
+
+  // Build tag UI
+  const container = document.getElementById('tag-people-list');
+  const cats = [...new Set(people.map(p => p.cat))];
+  container.innerHTML = cats.map(c => {
+    const catPeople = people.filter(p => p.cat === c);
+    return `
+      <div class="tag-cat-header">${c}</div>
+      <div class="tag-people">
+        ${catPeople.map(p => `
+          <button class="tag-person" data-id="${p.id}" onclick="toggleTag(this)">${escHTML(p.name)}</button>
+        `).join('')}
+      </div>`;
+  }).join('');
+
+  openSheet('sheet-activity');
+}
+
+function toggleTag(el) { el.classList.toggle('selected'); }
+
+function saveActivity() {
+  const dateStr = document.getElementById('f-act-date').value;
+  const place   = document.getElementById('f-act-place').value.trim();
+  const what    = document.getElementById('f-act-what').value.trim();
+  if (!what) { document.getElementById('f-act-what').focus(); return; }
+
+  const tagged = [...document.querySelectorAll('.tag-person.selected')].map(el => el.dataset.id);
+  const date   = dateStr ? new Date(dateStr).getTime() : Date.now();
+
+  activities.push({ id: uid(), date, place, what, people: tagged, createdAt: Date.now() });
+  save(); closeSheet('sheet-activity');
+
+  if (currentPage === 'activities') renderActivities();
+  if (currentPage === 'person' && currentPerson) renderPersonActivities();
+}
+
+// Close sheet on overlay click
+['sheet-person','sheet-note','sheet-activity'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeSheet(id);
+  });
+});
+
+// ── Init ──
+renderHome();
+</script>
+</body>
+</html>
