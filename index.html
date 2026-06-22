@@ -358,6 +358,10 @@ body {
 <div class="page active" id="page-home">
   <div class="topbar">
     <div class="topbar-title">朋友圈</div>
+    <button class="add-note-btn" onclick="exportData()" style="color:var(--text-muted)">匯出</button>
+    <label class="add-note-btn" style="color:var(--text-muted);cursor:pointer">
+      匯入<input type="file" accept=".json" onchange="importData(event)" style="display:none">
+    </label>
     <button class="add-note-btn" onclick="openAddPerson()">＋ 新增</button>
   </div>
 
@@ -848,6 +852,44 @@ function saveActivity() {
     if (e.target === this) closeSheet(id);
   });
 });
+
+// ── Export / Import ──
+function exportData() {
+  const data = { people, notes, activities, exportedAt: Date.now() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `friends-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.people || !data.notes || !data.activities) {
+        alert('檔案格式不對，請選擇正確的備份檔案');
+        return;
+      }
+      if (!confirm(`匯入後會覆蓋現有資料。\n共有 ${data.people.length} 位聯絡人、${data.notes.length} 條近況記錄、${data.activities.length} 筆活動。\n確定匯入嗎？`)) return;
+      people     = data.people;
+      notes      = data.notes;
+      activities = data.activities;
+      save();
+      renderHome();
+      alert('匯入成功！');
+    } catch(err) {
+      alert('讀取失敗，請確認檔案是否正確');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
 
 // ── Init ──
 renderHome();
