@@ -518,7 +518,10 @@ body {
 </div>
 
 <script>
-// ── Storage ──
+// ── Google Sheets API ──
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUF_-DI1y7OngxeYdLYcsjHs2EJKPtqf1g-CKTj8ApA-q5m9Z0gJJHYs2imYNlBxSckQ/exec';
+
+// ── Local cache (fallback) ──
 const KEY_PEOPLE = 'fcc_people';
 const KEY_NOTES  = 'fcc_notes';
 const KEY_ACTS   = 'fcc_acts';
@@ -526,11 +529,68 @@ const KEY_ACTS   = 'fcc_acts';
 let people     = JSON.parse(localStorage.getItem(KEY_PEOPLE) || '[]');
 let notes      = JSON.parse(localStorage.getItem(KEY_NOTES)  || '[]');
 let activities = JSON.parse(localStorage.getItem(KEY_ACTS)   || '[]');
+let isSyncing  = false;
 
-function save() {
+function saveLocal() {
   localStorage.setItem(KEY_PEOPLE, JSON.stringify(people));
   localStorage.setItem(KEY_NOTES,  JSON.stringify(notes));
   localStorage.setItem(KEY_ACTS,   JSON.stringify(activities));
+}
+
+async function save() {
+  saveLocal();
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'write', people, notes, activities }),
+    });
+  } catch(e) {
+    console.warn('無法同步到 Google Sheets，資料已存在本機', e);
+  }
+}
+
+async function loadFromSheets() {
+  showLoading(true);
+  try {
+    const res  = await fetch(GAS_URL + '?action=read');
+    const data = await res.json();
+    if (data.people && data.notes && data.activities) {
+      people     = data.people.map(deserialize);
+      notes      = data.notes.map(deserialize);
+      activities = data.activities.map(deserialize);
+      saveLocal();
+    }
+  } catch(e) {
+    console.warn('無法從 Google Sheets 載入，使用本機資料', e);
+  }
+  showLoading(false);
+  renderHome();
+}
+
+function deserialize(obj) {
+  const o = {...obj};
+  if (o.createdAt) o.createdAt = Number(o.createdAt);
+  if (o.date)      o.date      = Number(o.date);
+  if (o.doneAt)    o.doneAt    = Number(o.doneAt);
+  if (o.people && typeof o.people === 'string') {
+    o.people = o.people ? o.people.split(',') : [];
+  }
+  return o;
+}
+
+function showLoading(show) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(245,244,240,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;font-size:14px;color:#72706A;gap:12px;';
+    el.innerHTML = '<div style="width:32px;height:32px;border:3px solid #E0DDD8;border-top-color:#2D6A4F;border-radius:50%;animation:spin 0.8s linear infinite"></div>載入中…';
+    const style = document.createElement('style');
+    style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -892,7 +952,7 @@ function importData(e) {
 }
 
 // ── Init ──
-renderHome();
+loadFromSheets();
 </script>
 </body>
 </html>
