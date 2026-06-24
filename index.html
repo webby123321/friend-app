@@ -65,13 +65,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 
 /* Status section */
 .status-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.status-row { display: flex; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--border); gap: 10px; cursor: pointer; transition: background 0.12s; }
+.status-row { display: flex; align-items: center; border-bottom: 1px solid var(--border); gap: 10px; cursor: pointer; transition: background 0.12s; padding: 8px 14px; }
 .status-row:last-child { border-bottom: none; }
 .status-row:hover { background: var(--surface2); }
-.status-row.empty-row { padding: 5px 14px; }
+.status-row.empty-row { padding: 4px 14px; }
 .status-key { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 52px; }
 .status-val { font-size: 14px; color: var(--text); flex: 1; }
-.status-val.empty { color: var(--text-hint); font-size: 13px; }
+.status-val.empty { color: var(--text-hint); font-size: 11px; }
 .status-chevron { color: var(--text-hint); flex-shrink: 0; }
 
 .status-extra { display: flex; flex-direction: column; gap: 0; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -251,6 +251,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
         <button class="btn" onclick="closeSheet('sheet-person')">取消</button>
         <button class="btn btn-primary" onclick="savePerson()">儲存</button>
       </div>
+      <div style="margin-top:8px" id="person-delete-row"></div>
     </div>
   </div>
 </div>
@@ -683,6 +684,8 @@ function openAddPerson() {
   document.getElementById('sheet-person-title').textContent = '新增聯絡人';
   document.getElementById('f-name').value = '';
   document.getElementById('f-cat').value = 'TCSH';
+  const delRow = document.getElementById('person-delete-row');
+  if (delRow) delRow.innerHTML = '';
   openSheet('sheet-person');
 }
 
@@ -692,7 +695,18 @@ function openEditPerson() {
   document.getElementById('sheet-person-title').textContent = '編輯聯絡人';
   document.getElementById('f-name').value = currentPerson.name;
   document.getElementById('f-cat').value = currentPerson.cat;
+  const delRow = document.getElementById('person-delete-row');
+  if (delRow) delRow.innerHTML = `<button class="btn btn-danger" onclick="deletePerson('${currentPerson.id}')">刪除此聯絡人</button>`;
   openSheet('sheet-person');
+}
+
+function deletePerson(id) {
+  if (!confirm('確定刪除這個聯絡人？\n相關的近況記錄和狀態也會一併刪除。')) return;
+  people     = people.filter(p=>p.id!==id);
+  notes      = notes.filter(n=>n.personId!==id);
+  statuses   = statuses.filter(s=>s.personId!==id);
+  activities = activities.map(a=>({ ...a, people:(a.people||[]).filter(pid=>pid!==id) }));
+  save(); closeSheet('sheet-person'); goBack();
 }
 
 function savePerson() {
