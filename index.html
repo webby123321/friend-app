@@ -569,12 +569,12 @@ function renderNotes() {
   if (!list.length) { el.innerHTML=`<div class="empty">還沒有近況記錄<br>點右上角「＋ 新增」</div>`; return; }
 
   el.innerHTML = list.map((n,i)=>`
-    <div class="note-item">
-      <div class="note-item-body" onclick="openEditNote('${n.id}')">
+    <div class="note-item" onclick="openEditNote('${n.id}')">
+      <div class="note-item-body">
         <div class="note-time">${fmtDateTime(n.createdAt)}</div>
         <div class="note-text">${escHTML(n.text)}</div>
       </div>
-      <div class="note-order-btns">
+      <div class="note-order-btns" onclick="event.stopPropagation()">
         <button class="note-order-btn" onclick="moveNote('${n.id}',-1)" ${i===0?'disabled':''}>↑</button>
         <button class="note-order-btn" onclick="moveNote('${n.id}',1)" ${i===list.length-1?'disabled':''}>↓</button>
       </div>
