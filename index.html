@@ -65,7 +65,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 
 /* Status section */
 .status-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.status-row { display: flex; align-items: flex-start; padding: 10px 14px; border-bottom: 1px solid var(--border); gap: 10px; }
+.status-row { display: flex; align-items: center; padding: 7px 14px; border-bottom: 1px solid var(--border); gap: 10px; min-height: 0; }
 .status-row:last-child { border-bottom: none; }
 .status-key { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 52px; padding-top: 1px; }
 .status-val { font-size: 14px; color: var(--text); flex: 1; }
@@ -150,7 +150,6 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
     <div class="topbar-title">朋友圈</div>
     <button class="add-note-btn" onclick="exportData()" style="color:var(--text-muted)">匯出</button>
     <label class="add-note-btn" style="color:var(--text-muted);cursor:pointer">匯入<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
-    <button class="add-note-btn" onclick="openAddPerson()">＋ 新增</button>
   </div>
   <div class="categories" id="cat-tabs"></div>
   <div class="cards-grid" id="cards-grid"></div>
@@ -164,7 +163,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
       <span>活動</span>
     </button>
   </nav>
-  <button class="fab" onclick="openAddActivity()" style="bottom:80px">
+  <button class="fab" onclick="openAddPerson()" style="bottom:80px" title="新增聯絡人">
     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
   </button>
 </div>
@@ -212,10 +211,12 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 <!-- ACTIVITIES -->
 <div class="page" id="page-activities">
   <div class="topbar">
-    <div class="topbar-title">活動記錄</div>
-    <button class="add-note-btn" onclick="openAddActivity()">＋ 新增</button>
+    <div class="topbar-title">活動</div>
   </div>
   <div style="padding:12px 16px 100px" id="activities-list"></div>
+  <button class="fab" onclick="openAddActivity()" style="bottom:80px" title="新增活動">
+    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
   <nav class="bottom-nav">
     <button class="nav-tab" onclick="showTab('home',this)">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
@@ -238,11 +239,11 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
       <div class="form-group">
         <label class="form-label">分類 *</label>
         <select class="form-select" id="f-cat">
-          <option value="高中">高中</option>
-          <option value="大學電機">大學電機</option>
-          <option value="大學管樂">大學管樂</option>
-          <option value="研究所">研究所</option>
-          <option value="工作">工作</option>
+          <option value="TCSH">TCSH</option>
+          <option value="NTOU EE">NTOU EE</option>
+          <option value="NTOU ORCH">NTOU ORCH</option>
+          <option value="NYCU">NYCU</option>
+          <option value="Tronfuture">Tronfuture</option>
           <option value="親戚">親戚</option>
         </select>
       </div>
@@ -366,8 +367,8 @@ function showLoading(show) {
 }
 
 // ── Helpers ──
-const CATS = ['全部','高中','大學電機','大學管樂','研究所','工作','親戚'];
-const CAT_COLORS = { '高中':'#3D7EAA','大學電機':'#2D6A4F','大學管樂':'#9B5DE5','研究所':'#E07A5F','工作':'#B7985A','親戚':'#E53935' };
+const CATS = ['全部','TCSH','NTOU EE','NTOU ORCH','NYCU','Tronfuture','親戚'];
+const CAT_COLORS = { 'TCSH':'#3D7EAA','NTOU EE':'#2D6A4F','NTOU ORCH':'#9B5DE5','NYCU':'#E07A5F','Tronfuture':'#B7985A','親戚':'#E53935' };
 const FIXED_KEYS = ['工作','租屋','住處'];
 
 let currentCat = '全部', currentPage = 'home', currentPerson = null;
@@ -584,14 +585,17 @@ function moveNote(id, dir) {
   const idx = list.findIndex(n=>n.id===id);
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= list.length) return;
-  // Swap orders
-  const tmp = list[idx].order !== undefined ? list[idx].order : idx;
-  list[idx].order   = list[newIdx].order !== undefined ? list[newIdx].order : newIdx;
-  list[newIdx].order = tmp;
-  // Normalize orders
-  list.forEach((n,i)=>{ n.order=i; });
-  // Apply back to notes array
-  list.forEach(n=>{ const ni=notes.findIndex(x=>x.id===n.id); if(ni>=0) notes[ni]=n; });
+  // Swap the two items in the array
+  const tmp = list[idx];
+  list[idx] = list[newIdx];
+  list[newIdx] = tmp;
+  // Re-assign order values based on new positions
+  list.forEach((n, i) => { n.order = i; });
+  // Write back to notes array
+  list.forEach(n => {
+    const ni = notes.findIndex(x => x.id === n.id);
+    if (ni >= 0) notes[ni] = n;
+  });
   save(); renderNotes();
 }
 
@@ -650,7 +654,7 @@ function renderPersonActivities() {
 function renderActivities() {
   const list = [...activities].sort((a,b)=>b.date-a.date);
   const el = document.getElementById('activities-list');
-  if (!list.length) { el.innerHTML=`<div class="empty">還沒有活動記錄<br>點右上角「＋ 新增」</div>`; return; }
+  if (!list.length) { el.innerHTML=`<div class="empty">還沒有活動記錄<br>點右下角「＋」新增</div>`; return; }
   el.innerHTML = list.map(a=>{
     const tagged = (a.people||[]).map(pid=>{ const p=people.find(x=>x.id===pid); return p?`<span class="people-chip">${escHTML(p.name)}</span>`:''; }).join('');
     return `<div class="activity-full-item">
@@ -673,7 +677,7 @@ function openAddPerson() {
   editingPersonId = null;
   document.getElementById('sheet-person-title').textContent = '新增聯絡人';
   document.getElementById('f-name').value = '';
-  document.getElementById('f-cat').value = '高中';
+  document.getElementById('f-cat').value = 'TCSH';
   openSheet('sheet-person');
 }
 
