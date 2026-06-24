@@ -293,7 +293,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 <div class="overlay" id="sheet-activity">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">記錄活動</div>
+    <div class="sheet-title" id="sheet-activity-title">記錄活動</div>
     <div class="sheet-body">
       <div class="form-group"><label class="form-label">日期</label><input class="form-input" type="date" id="f-act-date"></div>
       <div class="form-group"><label class="form-label">地點</label><input class="form-input" id="f-act-place" placeholder="例如：台北、新竹"></div>
@@ -303,6 +303,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
         <button class="btn" onclick="closeSheet('sheet-activity')">取消</button>
         <button class="btn btn-primary" onclick="saveActivity()">儲存</button>
       </div>
+      <div style="margin-top:8px" id="activity-delete-row"></div>
     </div>
   </div>
 </div>
@@ -649,7 +650,7 @@ function renderPersonActivities() {
   const el = document.getElementById('person-activities');
   if (!acts.length) { el.innerHTML=`<div class="empty">還沒有一起的活動記錄</div>`; return; }
   el.innerHTML = acts.map(a=>`
-    <div class="activity-item">
+    <div class="activity-item" onclick="openEditActivity('${a.id}')" style="cursor:pointer">
       <div class="activity-date">${fmtDate(a.date)}</div>
       <div class="activity-title">${escHTML(a.what)}</div>
       ${a.place?`<div class="activity-place">📍 ${escHTML(a.place)}</div>`:''}
@@ -663,7 +664,7 @@ function renderActivities() {
   if (!list.length) { el.innerHTML=`<div class="empty">還沒有活動記錄<br>點右下角「＋」新增</div>`; return; }
   el.innerHTML = list.map(a=>{
     const tagged = (a.people||[]).map(pid=>{ const p=people.find(x=>x.id===pid); return p?`<span class="people-chip">${escHTML(p.name)}</span>`:''; }).join('');
-    return `<div class="activity-full-item">
+    return `<div class="activity-full-item" onclick="openEditActivity('${a.id}')" style="cursor:pointer">
       <div class="activity-date">${fmtDate(a.date)}</div>
       <div class="activity-title">${escHTML(a.what)}</div>
       ${a.place?`<div class="activity-place">📍 ${escHTML(a.place)}</div>`:''}
@@ -723,17 +724,49 @@ function savePerson() {
   }
 }
 
-function openAddActivity() {
-  document.getElementById('f-act-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('f-act-place').value = '';
-  document.getElementById('f-act-what').value = '';
+let editingActivityId = null;
+
+function buildTagUI(selectedIds=[]) {
   const container = document.getElementById('tag-people-list');
   const cats = [...new Set(people.map(p=>p.cat))];
   container.innerHTML = cats.map(c=>{
     const cp = people.filter(p=>p.cat===c);
-    return `<div class="tag-cat-header">${c}</div><div class="tag-people">${cp.map(p=>`<button class="tag-person" data-id="${p.id}" onclick="toggleTag(this)">${escHTML(p.name)}</button>`).join('')}</div>`;
+    return `<div class="tag-cat-header">${c}</div><div class="tag-people">${cp.map(p=>`<button class="tag-person ${selectedIds.includes(p.id)?'selected':''}" data-id="${p.id}" onclick="toggleTag(this)">${escHTML(p.name)}</button>`).join('')}</div>`;
   }).join('');
+}
+
+function openAddActivity() {
+  editingActivityId = null;
+  document.getElementById('sheet-activity-title').textContent = '記錄活動';
+  document.getElementById('f-act-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-act-place').value = '';
+  document.getElementById('f-act-what').value = '';
+  const delRow = document.getElementById('activity-delete-row');
+  if (delRow) delRow.innerHTML = '';
+  buildTagUI();
   openSheet('sheet-activity');
+}
+
+function openEditActivity(id) {
+  const a = activities.find(x=>x.id===id);
+  if (!a) return;
+  editingActivityId = id;
+  document.getElementById('sheet-activity-title').textContent = '編輯活動';
+  document.getElementById('f-act-date').value = new Date(a.date).toISOString().slice(0,10);
+  document.getElementById('f-act-place').value = a.place || '';
+  document.getElementById('f-act-what').value = a.what || '';
+  const delRow = document.getElementById('activity-delete-row');
+  if (delRow) delRow.innerHTML = `<button class="btn btn-danger" onclick="deleteActivity('${id}')">刪除此活動</button>`;
+  buildTagUI(a.people || []);
+  openSheet('sheet-activity');
+}
+
+function deleteActivity(id) {
+  if (!confirm('確定刪除這筆活動？')) return;
+  activities = activities.filter(a=>a.id!==id);
+  save(); closeSheet('sheet-activity');
+  if (currentPage==='activities') renderActivities();
+  if (currentPage==='person'&&currentPerson) renderPersonActivities();
 }
 
 function toggleTag(el) { el.classList.toggle('selected'); }
@@ -745,7 +778,12 @@ function saveActivity() {
   if (!what) { document.getElementById('f-act-what').focus(); return; }
   const tagged = [...document.querySelectorAll('.tag-person.selected')].map(el=>el.dataset.id);
   const date   = dateStr ? new Date(dateStr).getTime() : Date.now();
-  activities.push({ id:uid(), date, place, what, people:tagged, createdAt:Date.now() });
+  if (editingActivityId) {
+    const idx = activities.findIndex(a=>a.id===editingActivityId);
+    if (idx>=0) { activities[idx] = { ...activities[idx], date, place, what, people:tagged }; }
+  } else {
+    activities.push({ id:uid(), date, place, what, people:tagged, createdAt:Date.now() });
+  }
   save(); closeSheet('sheet-activity');
   if (currentPage==='activities') renderActivities();
   if (currentPage==='person'&&currentPerson) renderPersonActivities();
