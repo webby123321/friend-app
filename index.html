@@ -65,31 +65,31 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 
 /* Status section */
 .status-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.status-row { display: flex; align-items: center; padding: 7px 14px; border-bottom: 1px solid var(--border); gap: 10px; min-height: 0; }
+.status-row { display: flex; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--border); gap: 10px; cursor: pointer; transition: background 0.12s; }
 .status-row:last-child { border-bottom: none; }
-.status-key { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 52px; padding-top: 1px; }
+.status-row:hover { background: var(--surface2); }
+.status-row.empty-row { padding: 5px 14px; }
+.status-key { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 52px; }
 .status-val { font-size: 14px; color: var(--text); flex: 1; }
-.status-val.empty { color: var(--text-hint); font-style: italic; }
-.status-edit-btn { font-size: 12px; color: var(--text-hint); cursor: pointer; border: none; background: none; font-family: var(--font); padding: 0; flex-shrink: 0; }
-.status-edit-btn:hover { color: var(--accent); }
+.status-val.empty { color: var(--text-hint); font-size: 13px; }
+.status-chevron { color: var(--text-hint); flex-shrink: 0; }
 
 .status-extra { display: flex; flex-direction: column; gap: 0; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.status-extra-row { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); gap: 10px; }
+.status-extra-row { display: flex; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--border); gap: 10px; cursor: pointer; transition: background 0.12s; }
 .status-extra-row:last-child { border-bottom: none; }
+.status-extra-row:hover { background: var(--surface2); }
 
 /* Notes */
 .notes-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-.note-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
-.note-time { font-size: 11px; color: var(--text-hint); margin-bottom: 5px; }
+.note-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; display: flex; gap: 8px; align-items: flex-start; cursor: pointer; transition: border-color 0.12s; }
+.note-item:hover { border-color: var(--accent); }
+.note-item-body { flex: 1; min-width: 0; }
+.note-time { font-size: 11px; color: var(--text-hint); margin-bottom: 4px; }
 .note-text { font-size: 14px; line-height: 1.65; color: var(--text); white-space: pre-wrap; word-break: break-all; }
-.note-actions { display: flex; gap: 8px; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; align-items: center; }
-.note-action-btn { font-size: 12px; color: var(--text-hint); cursor: pointer; border: none; background: none; font-family: var(--font); padding: 0; }
-.note-action-btn:hover { color: var(--text); }
-.note-action-btn.danger:hover { color: #E53935; }
-.note-order-btn { font-size: 16px; color: var(--text-hint); cursor: pointer; border: none; background: none; padding: 0 2px; line-height: 1; }
-.note-order-btn:hover { color: var(--accent); }
+.note-order-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; padding-top: 2px; }
+.note-order-btn { font-size: 14px; color: var(--text-hint); cursor: pointer; border: none; background: none; padding: 1px 3px; line-height: 1; border-radius: 4px; }
+.note-order-btn:hover { color: var(--accent); background: var(--accent-light); }
 .note-order-btn:disabled { opacity: 0.2; cursor: default; }
-.note-order-btns { display: flex; gap: 2px; margin-left: auto; }
 
 /* Activity */
 .activity-item { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 8px; }
@@ -460,13 +460,16 @@ function renderStatus() {
   const fixedEl = document.getElementById('status-fixed');
   const extraEl = document.getElementById('status-extra');
 
+  const chevron = `<svg class="status-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>`;
+
   // Fixed keys
   fixedEl.innerHTML = FIXED_KEYS.map(key => {
     const s = statuses.find(x=>x.personId===pid && x.key===key);
-    return `<div class="status-row">
+    const hasVal = s && s.val;
+    return `<div class="status-row ${hasVal?'':'empty-row'}" onclick="openEditFixedStatus('${key}')">
       <div class="status-key">${key}</div>
-      <div class="status-val ${s&&s.val?'':'empty'}">${s&&s.val ? escHTML(s.val) : '未填寫'}</div>
-      <button class="status-edit-btn" onclick="openEditFixedStatus('${key}')">編輯</button>
+      <div class="status-val ${hasVal?'':'empty'}">${hasVal ? escHTML(s.val) : '點擊填寫'}</div>
+      ${chevron}
     </div>`;
   }).join('');
 
@@ -475,10 +478,10 @@ function renderStatus() {
   if (extras.length) {
     extraEl.style.display = '';
     extraEl.innerHTML = extras.map(s=>`
-      <div class="status-extra-row">
+      <div class="status-extra-row" onclick="openEditExtraStatus('${s.id}')">
         <div class="status-key">${escHTML(s.key)}</div>
         <div class="status-val" style="flex:1">${escHTML(s.val)}</div>
-        <button class="status-edit-btn" onclick="openEditExtraStatus('${s.id}')">編輯</button>
+        ${chevron}
       </div>`).join('');
   } else {
     extraEl.style.display = 'none';
@@ -567,15 +570,13 @@ function renderNotes() {
 
   el.innerHTML = list.map((n,i)=>`
     <div class="note-item">
-      <div class="note-time">${fmtDateTime(n.createdAt)}</div>
-      <div class="note-text">${escHTML(n.text)}</div>
-      <div class="note-actions">
-        <button class="note-action-btn" onclick="openEditNote('${n.id}')">編輯</button>
-        <button class="note-action-btn danger" onclick="deleteNote('${n.id}')">刪除</button>
-        <div class="note-order-btns">
-          <button class="note-order-btn" onclick="moveNote('${n.id}',-1)" ${i===0?'disabled':''}>↑</button>
-          <button class="note-order-btn" onclick="moveNote('${n.id}',1)" ${i===list.length-1?'disabled':''}>↓</button>
-        </div>
+      <div class="note-item-body" onclick="openEditNote('${n.id}')">
+        <div class="note-time">${fmtDateTime(n.createdAt)}</div>
+        <div class="note-text">${escHTML(n.text)}</div>
+      </div>
+      <div class="note-order-btns">
+        <button class="note-order-btn" onclick="moveNote('${n.id}',-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="note-order-btn" onclick="moveNote('${n.id}',1)" ${i===list.length-1?'disabled':''}>↓</button>
       </div>
     </div>`).join('');
 }
@@ -603,6 +604,7 @@ function openAddNote() {
   editingNoteId = null;
   document.getElementById('sheet-note-title').textContent = '新增近況';
   document.getElementById('f-note').value = '';
+  document.getElementById('note-delete-row').innerHTML = '';
   openSheet('sheet-note');
   setTimeout(()=>document.getElementById('f-note').focus(), 300);
 }
@@ -613,6 +615,7 @@ function openEditNote(id) {
   editingNoteId = id;
   document.getElementById('sheet-note-title').textContent = '編輯近況';
   document.getElementById('f-note').value = n.text;
+  document.getElementById('note-delete-row').innerHTML = `<button class="btn btn-danger" onclick="deleteNote('${id}')">刪除此記錄</button>`;
   openSheet('sheet-note');
 }
 
@@ -634,7 +637,7 @@ function saveNote() {
 function deleteNote(id) {
   if (!confirm('確定刪除這條記錄？')) return;
   notes = notes.filter(n=>n.id!==id);
-  save(); renderNotes();
+  save(); closeSheet('sheet-note'); renderNotes();
 }
 
 // ── PERSON ACTIVITIES ──
