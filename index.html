@@ -604,7 +604,8 @@ function openAddNote() {
   editingNoteId = null;
   document.getElementById('sheet-note-title').textContent = '新增近況';
   document.getElementById('f-note').value = '';
-  document.getElementById('note-delete-row').innerHTML = '';
+  const delRow = document.getElementById('note-delete-row');
+  if (delRow) delRow.innerHTML = '';
   openSheet('sheet-note');
   setTimeout(()=>document.getElementById('f-note').focus(), 300);
 }
@@ -615,7 +616,8 @@ function openEditNote(id) {
   editingNoteId = id;
   document.getElementById('sheet-note-title').textContent = '編輯近況';
   document.getElementById('f-note').value = n.text;
-  document.getElementById('note-delete-row').innerHTML = `<button class="btn btn-danger" onclick="deleteNote('${id}')">刪除此記錄</button>`;
+  const delRow = document.getElementById('note-delete-row');
+  if (delRow) delRow.innerHTML = `<button class="btn btn-danger" onclick="deleteNote('${id}')">刪除此記錄</button>`;
   openSheet('sheet-note');
 }
 
