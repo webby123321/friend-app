@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>朋友圈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -21,7 +24,7 @@
   --accent2-light: #3A2E00;
   --radius: 10px;
   --radius-lg: 16px;
-  --font: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', system-ui, sans-serif;
+  --font: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
 }
 
 body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
@@ -243,7 +246,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
           <option value="NTOU ORCH">NTOU ORCH</option>
           <option value="NYCU">NYCU</option>
           <option value="Tronfuture">Tronfuture</option>
-          <option value="親戚">親戚</option>
+          <option value="Relatives">Relatives</option>
         </select>
       </div>
       <div class="btn-row">
@@ -325,10 +328,14 @@ function saveLocal() {
   localStorage.setItem(KEY_STATUS, JSON.stringify(statuses));
 }
 
+function serializeForSheets(acts) {
+  return acts.map(a => ({ ...a, people: Array.isArray(a.people) ? a.people.join(',') : (a.people || '') }));
+}
+
 async function save() {
   saveLocal();
   try {
-    await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'write', people, notes, activities, statuses }) });
+    await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'write', people, notes, activities: serializeForSheets(activities), statuses }) });
   } catch(e) { console.warn('sync failed', e); }
 }
 
@@ -369,9 +376,9 @@ function showLoading(show) {
 }
 
 // ── Helpers ──
-const CATS = ['全部','TCSH','NTOU EE','NTOU ORCH','NYCU','Tronfuture','親戚'];
-const CAT_COLORS = { 'TCSH':'#0072B2','NTOU EE':'#009E73','NTOU ORCH':'#CC79A7','NYCU':'#D55E00','Tronfuture':'#E69F00','親戚':'#56B4E9' };
-const CAT_DARK_BG = { 'TCSH':'#1A4A72','NTOU EE':'#1A5C48','NTOU ORCH':'#5C3060','NYCU':'#703000','Tronfuture':'#705500','親戚':'#1E5580' };
+const CATS = ['全部','TCSH','NTOU EE','NTOU ORCH','NYCU','Tronfuture','Relatives'];
+const CAT_COLORS = { 'TCSH':'#0072B2','NTOU EE':'#009E73','NTOU ORCH':'#CC79A7','NYCU':'#D55E00','Tronfuture':'#E69F00','Relatives':'#56B4E9' };
+const CAT_DARK_BG = { 'TCSH':'#1A4A72','NTOU EE':'#1A5C48','NTOU ORCH':'#5C3060','NYCU':'#703000','Tronfuture':'#705500','Relatives':'#1E5580' };
 const FIXED_KEYS = ['工作','租屋','住處'];
 
 let currentCat = '全部', currentPage = 'home', currentPerson = null;
@@ -667,7 +674,7 @@ function renderActivities() {
   const el = document.getElementById('activities-list');
   if (!list.length) { el.innerHTML=`<div class="empty">還沒有活動記錄<br>點右下角「＋」新增</div>`; return; }
   el.innerHTML = list.map(a=>{
-    const tagged = (a.people||[]).map(pid=>{ const p=people.find(x=>x.id===pid); return p?`<span class="people-chip">${escHTML(p.name)}</span>`:''; }).join('');
+    const tagged = (a.people||[]).map(pid=>{ const p=people.find(x=>x.id===pid); if(!p) return ''; const col=CAT_COLORS[p.cat]||'#888'; const bg=CAT_DARK_BG[p.cat]||'#1F1F1F'; return `<span class="people-chip" style="background:${bg};color:${col};border:1px solid ${col}">${escHTML(p.name)}</span>`; }).join('');
     return `<div class="activity-full-item" onclick="openEditActivity('${a.id}')" style="cursor:pointer">
       <div class="activity-date">${fmtDate(a.date)}</div>
       <div class="activity-title">${escHTML(a.what)}</div>
@@ -796,6 +803,19 @@ function saveActivity() {
 ['sheet-person','sheet-note','sheet-activity','sheet-status'].forEach(id=>{
   document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeSheet(id); });
 });
+
+// ── Swipe back gesture ──
+let swipeStartX = 0, swipeStartY = 0;
+document.addEventListener('touchstart', e => {
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (currentPage !== 'person') return;
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
+  if (swipeStartX < 40 && dx > 80 && dy < 80) goBack();
+}, { passive: true });
 
 // ── Export / Import ──
 function exportData() {
