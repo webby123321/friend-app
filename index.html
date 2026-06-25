@@ -42,13 +42,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .cat-btn:hover { border-color: var(--accent); color: var(--accent); }
 .cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-.cards-grid { padding: 8px 16px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.person-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 14px; cursor: pointer; transition: all 0.15s; position: relative; }
-.person-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.cards-grid { padding: 8px 16px 100px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.person-card { border: none; border-radius: var(--radius-lg); padding: 12px 10px; cursor: pointer; transition: all 0.15s; position: relative; }
+.person-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
 .person-card:active { transform: translateY(0); }
-.card-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-.card-time { font-size: 11px; color: var(--text-hint); display: flex; align-items: center; gap: 3px; }
-.card-cat-dot { position: absolute; top: 12px; right: 12px; width: 7px; height: 7px; border-radius: 50%; }
+.card-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-time { font-size: 10px; color: rgba(0,0,0,0.4); display: flex; align-items: center; gap: 3px; }
+.card-cat-dot { display: none; }
 
 .fab { position: fixed; bottom: 24px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 24px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(45,106,79,0.4); z-index: 40; transition: transform 0.15s; }
 .fab:active { transform: scale(0.93); }
@@ -134,7 +134,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .nav-tab span { font-size: 10px; font-weight: 500; }
 
 @media (min-width: 600px) {
-  .cards-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .cards-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
   .sheet { border-radius: 16px; margin: auto; max-height: 80vh; }
   .overlay { align-items: center; }
 }
@@ -420,9 +420,12 @@ function goBack() { showPage('home'); renderHome(); }
 
 // ── HOME ──
 function renderHome() {
-  document.getElementById('cat-tabs').innerHTML = CATS.map(c=>
-    `<button class="cat-btn ${c===currentCat?'active':''}" onclick="setCat('${c}')">${c}</button>`
-  ).join('');
+  document.getElementById('cat-tabs').innerHTML = CATS.map(c=>{
+    const color = CAT_COLORS[c];
+    const isActive = c === currentCat;
+    const style = color && !isActive ? `style="color:${color};border-color:${color}44"` : '';
+    return `<button class="cat-btn ${isActive?'active':''}" ${style} onclick="setCat('${c}')">${c}</button>`;
+  }).join('');
 
   let list = currentCat==='全部' ? people : people.filter(p=>p.cat===currentCat);
   list = [...list].sort((a,b)=>(lastNoteTime(b.id)||b.createdAt)-(lastNoteTime(a.id)||a.createdAt));
@@ -433,8 +436,8 @@ function renderHome() {
   grid.innerHTML = list.map(p => {
     const last = lastNoteTime(p.id);
     const color = CAT_COLORS[p.cat]||'#888';
-    return `<div class="person-card" onclick="openPerson('${p.id}')">
-      <div class="card-cat-dot" style="background:${color}"></div>
+    const bgColor = color + '22';
+    return `<div class="person-card" onclick="openPerson('${p.id}')" style="background:${bgColor}">
       <div class="card-name">${escHTML(p.name)}</div>
       <div class="card-time">
         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
