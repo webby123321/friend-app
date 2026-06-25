@@ -8,17 +8,17 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  --bg: #F5F4F0;
-  --surface: #FFFFFF;
-  --surface2: #EDECEA;
-  --border: #E0DDD8;
-  --text: #1C1B18;
-  --text-muted: #72706A;
-  --text-hint: #A8A49E;
-  --accent: #2D6A4F;
-  --accent-light: #E8F4EE;
-  --accent2: #B7985A;
-  --accent2-light: #FAF3E7;
+  --bg: #111111;
+  --surface: #1F1F1F;
+  --surface2: #2C2C2C;
+  --border: #444444;
+  --text: #EFEFEF;
+  --text-muted: #BBBBBB;
+  --text-hint: #D8D8D8;
+  --accent: #4BA3D4;
+  --accent-light: #1A3A4A;
+  --accent2: #E69F00;
+  --accent2-light: #3A2E00;
   --radius: 10px;
   --radius-lg: 16px;
   --font: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', system-ui, sans-serif;
@@ -47,10 +47,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .person-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
 .person-card:active { transform: translateY(0); }
 .card-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-time { font-size: 10px; color: rgba(0,0,0,0.4); display: flex; align-items: center; gap: 3px; }
+.card-time { font-size: 10px; color: var(--text-hint); display: flex; align-items: center; gap: 3px; }
 .card-cat-dot { display: none; }
 
-.fab { position: fixed; bottom: 24px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 24px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(45,106,79,0.4); z-index: 40; transition: transform 0.15s; }
+.fab { position: fixed; bottom: 24px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 24px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(0,114,178,0.4); z-index: 40; transition: transform 0.15s; }
 .fab:active { transform: scale(0.93); }
 
 .person-header { padding: 20px 16px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
@@ -361,7 +361,7 @@ function showLoading(show) {
   if (!el) {
     el = document.createElement('div');
     el.id = 'loading-overlay';
-    el.style.cssText = 'position:fixed;inset:0;background:rgba(245,244,240,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;font-size:14px;color:#72706A;gap:12px;';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(17,17,17,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;font-size:14px;color:#BBBBBB;gap:12px;';
     el.innerHTML = '<div style="width:32px;height:32px;border:3px solid #E0DDD8;border-top-color:#2D6A4F;border-radius:50%;animation:spin 0.8s linear infinite"></div>載入中…';
     document.body.appendChild(el);
   }
@@ -370,7 +370,8 @@ function showLoading(show) {
 
 // ── Helpers ──
 const CATS = ['全部','TCSH','NTOU EE','NTOU ORCH','NYCU','Tronfuture','親戚'];
-const CAT_COLORS = { 'TCSH':'#3D7EAA','NTOU EE':'#2D6A4F','NTOU ORCH':'#9B5DE5','NYCU':'#E07A5F','Tronfuture':'#B7985A','親戚':'#E53935' };
+const CAT_COLORS = { 'TCSH':'#0072B2','NTOU EE':'#009E73','NTOU ORCH':'#CC79A7','NYCU':'#D55E00','Tronfuture':'#E69F00','親戚':'#56B4E9' };
+const CAT_DARK_BG = { 'TCSH':'#1A4A72','NTOU EE':'#1A5C48','NTOU ORCH':'#5C3060','NYCU':'#703000','Tronfuture':'#705500','親戚':'#1E5580' };
 const FIXED_KEYS = ['工作','租屋','住處'];
 
 let currentCat = '全部', currentPage = 'home', currentPerson = null;
@@ -423,7 +424,7 @@ function renderHome() {
   document.getElementById('cat-tabs').innerHTML = CATS.map(c=>{
     const color = CAT_COLORS[c];
     const isActive = c === currentCat;
-    const style = color && !isActive ? `style="color:${color};border-color:${color}44"` : '';
+    const style = color && !isActive ? `style="background:${color};border-color:${color};color:#fff"` : '';
     return `<button class="cat-btn ${isActive?'active':''}" ${style} onclick="setCat('${c}')">${c}</button>`;
   }).join('');
 
@@ -436,8 +437,8 @@ function renderHome() {
   grid.innerHTML = list.map(p => {
     const last = lastNoteTime(p.id);
     const color = CAT_COLORS[p.cat]||'#888';
-    const bgColor = color + '22';
-    return `<div class="person-card" onclick="openPerson('${p.id}')" style="background:${bgColor}">
+    const bgColor = CAT_DARK_BG[p.cat] || '#1F1F1F';
+    return `<div class="person-card" onclick="openPerson('${p.id}')" style="background:${bgColor};border-left:3px solid ${color}">
       <div class="card-name">${escHTML(p.name)}</div>
       <div class="card-time">
         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
