@@ -27,7 +27,7 @@
   --font: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
 }
 
-body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; overflow-x: hidden; }
 
 .page { display: none; min-height: 100vh; }
 .page.active { display: block; }
@@ -64,7 +64,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
 
-.add-note-btn { font-size: 13px; color: var(--accent); cursor: pointer; border: none; background: none; font-family: var(--font); display: flex; align-items: center; gap: 4px; }
+.add-note-btn { font-size: 13px; color: var(--accent); cursor: pointer; border: none; background: none; font-family: var(--font); display: flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; }
 
 /* Status section */
 .status-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -126,12 +126,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-danger { background: #E53935; border-color: #E53935; color: #fff; }
 
-.activity-full-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; }
-.activity-full-item:hover { border-color: var(--accent2); }
+.activity-full-item { background: var(--surface); border: none; border-bottom: 1px solid var(--border); border-radius: 0; padding: 14px 16px; margin-bottom: 0; }
+.activity-full-item:first-child { border-top: 1px solid var(--border); }
+.activity-full-item:hover { background: var(--surface2); }
 .activity-people { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .people-chip { font-size: 12px; padding: 2px 8px; background: var(--accent2-light); color: var(--accent2); border-radius: 20px; font-weight: 500; }
 
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 40; padding-bottom: env(safe-area-inset-bottom); }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 40; padding-bottom: calc(env(safe-area-inset-bottom) + 10px); }
 .nav-tab { flex: 1; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; border: none; background: none; font-family: var(--font); color: var(--text-hint); transition: color 0.12s; }
 .nav-tab.active { color: var(--accent); }
 .nav-tab span { font-size: 10px; font-weight: 500; }
@@ -150,8 +151,6 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 <div class="page active" id="page-home">
   <div class="topbar">
     <div class="topbar-title">朋友圈</div>
-    <button class="add-note-btn" onclick="exportData()" style="color:var(--text-muted)">匯出</button>
-    <label class="add-note-btn" style="color:var(--text-muted);cursor:pointer">匯入<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
   </div>
   <div class="categories" id="cat-tabs"></div>
   <div class="cards-grid" id="cards-grid"></div>
@@ -163,6 +162,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
     <button class="nav-tab" onclick="showTab('activities',this)">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       <span>活動</span>
+    </button>
+    <button class="nav-tab nav-tab" onclick="showTab('more',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>更多</span>
     </button>
   </nav>
   <button class="fab" onclick="openAddPerson()" style="bottom:80px" title="新增聯絡人">
@@ -187,7 +190,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
   <!-- Status section -->
   <div class="section">
     <div class="section-header">
-      <div class="section-title">目前狀態</div>
+      <div class="section-title">紀錄</div>
       <button class="add-note-btn" onclick="openAddStatus()">＋ 新增</button>
     </div>
     <div class="status-grid" id="status-fixed"></div>
@@ -197,7 +200,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
   <!-- Notes section -->
   <div class="section">
     <div class="section-header">
-      <div class="section-title">近況記錄</div>
+      <div class="section-title">近況</div>
       <button class="add-note-btn" onclick="openAddNote()">＋ 新增</button>
     </div>
     <div class="notes-list" id="notes-list"></div>
@@ -205,7 +208,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 
   <!-- Activities section -->
   <div class="section" style="padding-bottom:100px">
-    <div class="section-header"><div class="section-title">一起的活動</div></div>
+    <div class="section-header"><div class="section-title">活動</div></div>
     <div id="person-activities"></div>
   </div>
 </div>
@@ -227,6 +230,58 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
     <button class="nav-tab active" onclick="showTab('activities',this)">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       <span>活動</span>
+    </button>
+    <button class="nav-tab nav-tab" onclick="showTab('more',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>更多</span>
+    </button>
+  </nav>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-more">
+  <div class="topbar">
+    <div class="topbar-title">更多</div>
+  </div>
+  <div style="padding:16px 16px 100px">
+    <div class="section-title" style="margin-bottom:12px">資料</div>
+    <div class="status-grid" style="margin-bottom:24px">
+      <div class="status-row" onclick="exportData()" style="cursor:pointer">
+        <div class="status-key">匯出</div>
+        <div class="status-val">下載 JSON 備份</div>
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <label class="status-row" style="cursor:pointer">
+        <div class="status-key">匯入</div>
+        <div class="status-val">從 JSON 還原資料</div>
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none">
+      </label>
+    </div>
+    <div class="section-title" style="margin-bottom:12px">關於</div>
+    <div class="status-grid">
+      <div class="status-row">
+        <div class="status-key">版本</div>
+        <div class="status-val">v7</div>
+      </div>
+      <div class="status-row">
+        <div class="status-key">更新日期</div>
+        <div class="status-val">2026-06-30</div>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-tab" onclick="showTab('home',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      <span>朋友圈</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('activities',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>活動</span>
+    </button>
+    <button class="nav-tab nav-tab active" onclick="showTab('more',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>更多</span>
     </button>
   </nav>
 </div>
@@ -292,22 +347,21 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
   </div>
 </div>
 
-<!-- SHEET: Activity -->
-<div class="overlay" id="sheet-activity">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title" id="sheet-activity-title">記錄活動</div>
-    <div class="sheet-body">
-      <div class="form-group"><label class="form-label">日期</label><input class="form-input" type="date" id="f-act-date"></div>
-      <div class="form-group"><label class="form-label">地點</label><input class="form-input" id="f-act-place" placeholder="例如：台北、新竹"></div>
-      <div class="form-group"><label class="form-label">做了什麼</label><input class="form-input" id="f-act-what" placeholder="例如：吃飯、看電影、聚會"></div>
-      <div class="form-group"><label class="form-label">標記的人</label><div id="tag-people-list"></div></div>
-      <div class="btn-row">
-        <button class="btn" onclick="closeSheet('sheet-activity')">取消</button>
-        <button class="btn btn-primary" onclick="saveActivity()">儲存</button>
-      </div>
-      <div style="margin-top:8px" id="activity-delete-row"></div>
-    </div>
+<!-- PAGE: Activity Edit -->
+<div class="page" id="page-activity-edit">
+  <div class="topbar">
+    <button class="back-btn" onclick="closeActivityEdit()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>返回
+    </button>
+    <div class="topbar-title" id="page-activity-edit-title">記錄活動</div>
+    <button class="add-note-btn" onclick="saveActivity()">儲存</button>
+  </div>
+  <div style="padding:16px 16px 100px">
+    <div class="form-group"><label class="form-label">日期</label><input class="form-input" type="date" id="f-act-date"></div>
+    <div class="form-group"><label class="form-label">地點</label><input class="form-input" id="f-act-place" placeholder="例如：台北、新竹"></div>
+    <div class="form-group"><label class="form-label">做了什麼</label><input class="form-input" id="f-act-what" placeholder="例如：吃飯、看電影、聚會"></div>
+    <div class="form-group"><label class="form-label">標記的人</label><div id="tag-people-list"></div></div>
+    <div style="margin-top:16px" id="activity-delete-row"></div>
   </div>
 </div>
 
@@ -420,9 +474,11 @@ function showPage(id) {
 }
 function showTab(tab, el) {
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav .nav-tab').forEach(t=>{ if(tab==='settings') t.classList.add('active'); });
   el.classList.add('active');
   if (tab==='home') { showPage('home'); renderHome(); }
-  else { showPage('activities'); renderActivities(); }
+  else if (tab==='activities') { showPage('activities'); renderActivities(); }
+  else if (tab==='more') { showPage('more'); }
 }
 function goBack() { showPage('home'); renderHome(); }
 
@@ -735,7 +791,7 @@ function savePerson() {
   }
 }
 
-let editingActivityId = null;
+let editingActivityId = null, activityEditSource = 'activities';
 
 function buildTagUI(selectedIds=[]) {
   const container = document.getElementById('tag-people-list');
@@ -748,34 +804,41 @@ function buildTagUI(selectedIds=[]) {
 
 function openAddActivity() {
   editingActivityId = null;
-  document.getElementById('sheet-activity-title').textContent = '記錄活動';
+  activityEditSource = currentPage;
+  document.getElementById('page-activity-edit-title').textContent = '記錄活動';
   document.getElementById('f-act-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('f-act-place').value = '';
   document.getElementById('f-act-what').value = '';
   const delRow = document.getElementById('activity-delete-row');
   if (delRow) delRow.innerHTML = '';
   buildTagUI();
-  openSheet('sheet-activity');
+  showPage('activity-edit');
 }
 
 function openEditActivity(id) {
   const a = activities.find(x=>x.id===id);
   if (!a) return;
   editingActivityId = id;
-  document.getElementById('sheet-activity-title').textContent = '編輯活動';
+  activityEditSource = currentPage;
+  document.getElementById('page-activity-edit-title').textContent = '編輯活動';
   document.getElementById('f-act-date').value = new Date(a.date).toISOString().slice(0,10);
   document.getElementById('f-act-place').value = a.place || '';
   document.getElementById('f-act-what').value = a.what || '';
   const delRow = document.getElementById('activity-delete-row');
   if (delRow) delRow.innerHTML = `<button class="btn btn-danger" onclick="deleteActivity('${id}')">刪除此活動</button>`;
   buildTagUI(a.people || []);
-  openSheet('sheet-activity');
+  showPage('activity-edit');
+}
+
+function closeActivityEdit() {
+  if (activityEditSource === 'person') { showPage('person'); }
+  else { showPage('activities'); renderActivities(); }
 }
 
 function deleteActivity(id) {
   if (!confirm('確定刪除這筆活動？')) return;
   activities = activities.filter(a=>a.id!==id);
-  save(); closeSheet('sheet-activity');
+  save(); closeActivityEdit();
   if (currentPage==='activities') renderActivities();
   if (currentPage==='person'&&currentPerson) renderPersonActivities();
 }
@@ -795,12 +858,12 @@ function saveActivity() {
   } else {
     activities.push({ id:uid(), date, place, what, people:tagged, createdAt:Date.now() });
   }
-  save(); closeSheet('sheet-activity');
+  save(); closeActivityEdit();
   if (currentPage==='activities') renderActivities();
   if (currentPage==='person'&&currentPerson) renderPersonActivities();
 }
 
-['sheet-person','sheet-note','sheet-activity','sheet-status'].forEach(id=>{
+['sheet-person','sheet-note','sheet-status'].forEach(id=>{
   document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeSheet(id); });
 });
 
@@ -814,7 +877,10 @@ document.addEventListener('touchend', e => {
   if (currentPage !== 'person') return;
   const dx = e.changedTouches[0].clientX - swipeStartX;
   const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
-  if (swipeStartX < 40 && dx > 80 && dy < 80) goBack();
+  if (swipeStartX < 40 && dx > 80 && dy < 80) {
+    if (currentPage === 'person') goBack();
+    else if (currentPage === 'activity-edit') closeActivityEdit();
+  }
 }, { passive: true });
 
 // ── Export / Import ──
