@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>朋友圈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #111111;
+  --surface: #1F1F1F;
+  --surface2: #2C2C2C;
+  --border: #444444;
+  --text: #EFEFEF;
+  --text-muted: #BBBBBB;
+  --text-hint: #D8D8D8;
+  --accent: #4BA3D4;
+  --accent-light: #1A3A4A;
+  --accent2: #E69F00;
+  --accent2-light: #3A2E00;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --font: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; overflow-x: hidden; }
+
+.page { display: none; min-height: 100vh; }
+.page.active { display: block; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+}
+.topbar-title { font-size: 17px; font-weight: 600; flex: 1; letter-spacing: -0.3px; }
+.back-btn { display: flex; align-items: center; gap: 4px; font-size: 15px; color: var(--accent); cursor: pointer; border: none; background: none; padding: 4px 0; }
+
+.categories { padding: 16px 16px 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+.cat-btn { padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: var(--font); }
+.cat-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.cards-grid { padding: 8px 16px 100px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.person-card { border: none; border-radius: var(--radius-lg); padding: 12px 10px; cursor: pointer; transition: all 0.15s; position: relative; }
+.person-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.person-card:active { transform: translateY(0); }
+.card-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-time { font-size: 10px; color: var(--text-hint); display: flex; align-items: center; gap: 3px; }
+.card-cat-dot { display: none; }
+
+.fab { position: fixed; bottom: 24px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 24px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(0,114,178,0.4); z-index: 40; transition: transform 0.15s; }
+.fab:active { transform: scale(0.93); }
+
+.person-header { padding: 20px 16px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.person-name-lg { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+.person-cat-tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 20px; background: var(--accent-light); color: var(--accent); font-weight: 500; }
+
+.section { padding: 16px 16px 0; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+
+.add-note-btn { font-size: 13px; color: var(--accent); cursor: pointer; border: none; background: none; font-family: var(--font); display: flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; }
+
+/* Status section */
+.status-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.status-row { display: flex; align-items: center; border-bottom: 1px solid var(--border); gap: 8px; cursor: pointer; transition: background 0.12s; padding: 0px 14px; height: 36px; }
+.status-row:last-child { border-bottom: none; }
+.status-row:hover { background: var(--surface2); }
+.status-key { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 48px; flex-shrink: 0; }
+.status-val { font-size: 13px; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.status-val.empty { color: var(--text-hint); font-size: 13px; }
+.status-chevron { color: var(--text-hint); flex-shrink: 0; }
+
+.status-extra { display: flex; flex-direction: column; gap: 0; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.status-extra-row { display: flex; align-items: center; padding: 7px 14px; border-bottom: 1px solid var(--border); gap: 8px; cursor: pointer; transition: background 0.12s; }
+.status-extra-row:last-child { border-bottom: none; }
+.status-extra-row:hover { background: var(--surface2); }
+
+/* Notes */
+.notes-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.note-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; display: flex; gap: 8px; align-items: flex-start; cursor: pointer; transition: border-color 0.12s; }
+.note-item:hover { border-color: var(--accent); }
+.note-item-body { flex: 1; min-width: 0; }
+.note-time { font-size: 11px; color: var(--text-hint); margin-bottom: 4px; }
+.note-text { font-size: 14px; line-height: 1.65; color: var(--text); white-space: pre-wrap; word-break: break-all; }
+.note-order-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; padding-top: 2px; }
+.note-order-btn { font-size: 14px; color: var(--text-hint); cursor: pointer; border: none; background: none; padding: 1px 3px; line-height: 1; border-radius: 4px; }
+.note-order-btn:hover { color: var(--accent); background: var(--accent-light); }
+.note-order-btn:disabled { opacity: 0.2; cursor: default; }
+
+/* Activity */
+.activity-item { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 8px; }
+.activity-date { font-size: 11px; color: var(--text-hint); margin-bottom: 3px; }
+.activity-title { font-size: 14px; font-weight: 500; }
+.activity-place { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.empty { text-align: center; padding: 32px 20px; color: var(--text-hint); font-size: 13px; }
+
+/* Overlay / Sheet */
+.overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.45); display: none; align-items: flex-end; justify-content: center; }
+.overlay.open { display: flex; }
+.sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 0 0 40px; }
+.sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 10px auto 0; }
+.sheet-title { font-size: 17px; font-weight: 600; padding: 16px 16px 12px; border-bottom: 1px solid var(--border); }
+.sheet-body { padding: 16px; }
+
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; letter-spacing: 0.04em; }
+.form-input, .form-textarea, .form-select { width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-size: 15px; background: var(--bg); color: var(--text); outline: none; font-family: var(--font); transition: border-color 0.15s; }
+.form-textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); background: var(--surface); }
+
+.tag-cat-header { font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 10px 0 6px; letter-spacing: 0.04em; }
+.tag-people { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-person { padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted); font-size: 13px; cursor: pointer; transition: all 0.12s; font-family: var(--font); }
+.tag-person.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.btn-row { display: flex; gap: 8px; margin-top: 4px; }
+.btn { flex: 1; padding: 12px; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--font); transition: background 0.12s; }
+.btn:active { opacity: 0.8; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-danger { background: #E53935; border-color: #E53935; color: #fff; }
+
+.activity-full-item { background: var(--surface); border: none; border-bottom: 1px solid var(--border); border-radius: 0; padding: 14px 16px; margin-bottom: 0; }
+.activity-full-item:first-child { border-top: 1px solid var(--border); }
+.activity-full-item:hover { background: var(--surface2); }
+.activity-people { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.people-chip { font-size: 12px; padding: 2px 8px; background: var(--accent2-light); color: var(--accent2); border-radius: 20px; font-weight: 500; }
+
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 40; padding-bottom: calc(env(safe-area-inset-bottom) + 10px); }
+.nav-tab { flex: 1; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; border: none; background: none; font-family: var(--font); color: var(--text-hint); transition: color 0.12s; }
+.nav-tab.active { color: var(--accent); }
+.nav-tab span { font-size: 10px; font-weight: 500; }
+
+@media (min-width: 600px) {
+  .cards-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .sheet { border-radius: 16px; margin: auto; max-height: 80vh; }
+  .overlay { align-items: center; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="topbar">
+    <div class="topbar-title">朋友圈</div>
+  </div>
+  <div class="categories" id="cat-tabs"></div>
+  <div class="cards-grid" id="cards-grid"></div>
+  <nav class="bottom-nav">
+    <button class="nav-tab active" onclick="showTab('home',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      <span>朋友圈</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('activities',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>活動</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('more',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>更多</span>
+    </button>
+  </nav>
+  <button class="fab" onclick="openAddPerson()" style="bottom:80px" title="新增聯絡人">
+    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- PERSON -->
+<div class="page" id="page-person">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>返回
+    </button>
+    <div class="topbar-title" id="person-topbar-name"></div>
+    <button class="add-note-btn" onclick="openEditPerson()">編輯</button>
+  </div>
+  <div class="person-header">
+    <div class="person-name-lg" id="person-name"></div>
+    <span class="person-cat-tag" id="person-cat"></span>
+  </div>
+
+  <!-- Status section -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">紀錄</div>
+      <button class="add-note-btn" onclick="openAddStatus()">＋ 新增</button>
+    </div>
+    <div class="status-grid" id="status-fixed"></div>
+    <div class="status-extra" id="status-extra" style="display:none"></div>
+  </div>
+
+  <!-- Notes section -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">近況</div>
+      <button class="add-note-btn" onclick="openAddNote()">＋ 新增</button>
+    </div>
+    <div class="notes-list" id="notes-list"></div>
+  </div>
+
+  <!-- Activities section -->
+  <div class="section" style="padding-bottom:100px">
+    <div class="section-header"><div class="section-title">活動</div></div>
+    <div id="person-activities"></div>
+  </div>
+</div>
+
+<!-- ACTIVITIES -->
+<div class="page" id="page-activities">
+  <div class="topbar">
+    <div class="topbar-title">活動</div>
+  </div>
+  <div style="padding:12px 16px 100px" id="activities-list"></div>
+  <button class="fab" onclick="openAddActivity()" style="bottom:80px" title="新增活動">
+    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <nav class="bottom-nav">
+    <button class="nav-tab" onclick="showTab('home',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      <span>朋友圈</span>
+    </button>
+    <button class="nav-tab active" onclick="showTab('activities',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>活動</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('more',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>更多</span>
+    </button>
+  </nav>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-more">
+  <div class="topbar">
+    <div class="topbar-title">更多</div>
+  </div>
+  <div style="padding:16px 16px 100px">
+    <div class="section-title" style="margin-bottom:12px">資料</div>
+    <div class="status-grid" style="margin-bottom:24px">
+      <div class="status-row" onclick="exportData()" style="cursor:pointer">
+        <div class="status-key">匯出</div>
+        <div class="status-val">下載 JSON 備份</div>
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <label class="status-row" style="cursor:pointer">
+        <div class="status-key">匯入</div>
+        <div class="status-val">從 JSON 還原資料</div>
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none">
+      </label>
+    </div>
+    <div class="section-title" style="margin-bottom:12px">關於</div>
+    <div class="status-grid">
+      <div class="status-row">
+        <div class="status-key">版本</div>
+        <div class="status-val">v8</div>
+      </div>
+      <div class="status-row">
+        <div class="status-key">更新日期</div>
+        <div class="status-val">2026-06-30</div>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-tab" onclick="showTab('home',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      <span>朋友圈</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('activities',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>活動</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('more',this)">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>更多</span>
+    </button>
+  </nav>
+</div>
+
+<!-- SHEET: Person -->
+<div class="overlay" id="sheet-person">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-person-title">新增聯絡人</div>
+    <div class="sheet-body">
+      <div class="form-group"><label class="form-label">姓名 *</label><input class="form-input" id="f-name" placeholder="輸入姓名"></div>
+      <div class="form-group">
+        <label class="form-label">分類 *</label>
+        <select class="form-select" id="f-cat">
+          <option value="TCSH">TCSH</option>
+          <option value="NTOU EE">NTOU EE</option>
+          <option value="NTOU ORCH">NTOU ORCH</option>
+          <option value="NYCU">NYCU</option>
+          <option value="Tronfuture">Tronfuture</option>
+          <option value="Relatives">Relatives</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="closeSheet('sheet-person')">取消</button>
+        <button class="btn btn-primary" onclick="savePerson()">儲存</button>
+      </div>
+      <div style="margin-top:8px" id="person-delete-row"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: Note -->
+<div class="overlay" id="sheet-note">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-note-title">新增近況</div>
+    <div class="sheet-body">
+      <div class="form-group"><label class="form-label">內容</label><textarea class="form-textarea" id="f-note" placeholder="記錄一下他最近的狀況…"></textarea></div>
+      <div class="btn-row">
+        <button class="btn" onclick="closeSheet('sheet-note')">取消</button>
+        <button class="btn btn-primary" onclick="saveNote()">儲存</button>
+      </div>
+      <div style="margin-top:8px" id="note-delete-row"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: Status -->
+<div class="overlay" id="sheet-status">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-status-title">編輯狀態</div>
+    <div class="sheet-body">
+      <div class="form-group"><label class="form-label">項目名稱</label><input class="form-input" id="f-status-key" placeholder="例如：感情、寵物、興趣…"></div>
+      <div class="form-group"><label class="form-label">內容</label><input class="form-input" id="f-status-val" placeholder="輸入內容"></div>
+      <input type="hidden" id="f-status-id">
+      <div class="btn-row">
+        <button class="btn" onclick="closeSheet('sheet-status')">取消</button>
+        <button class="btn btn-primary" onclick="saveStatus()">儲存</button>
+      </div>
+      <div style="margin-top:8px" id="status-delete-row"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: Activity Edit -->
+<div class="page" id="page-activity-edit">
+  <div class="topbar">
+    <button class="back-btn" onclick="closeActivityEdit()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>返回
+    </button>
+    <div class="topbar-title" id="page-activity-edit-title">記錄活動</div>
+    <button class="add-note-btn" onclick="saveActivity()">儲存</button>
+  </div>
+  <div style="padding:16px 16px 100px">
+    <div class="form-group"><label class="form-label">日期</label><input class="form-input" type="date" id="f-act-date"></div>
+    <div class="form-group"><label class="form-label">地點</label><input class="form-input" id="f-act-place" placeholder="例如：台北、新竹"></div>
+    <div class="form-group"><label class="form-label">做了什麼</label><input class="form-input" id="f-act-what" placeholder="例如：吃飯、看電影、聚會"></div>
+    <div class="form-group"><label class="form-label">標記的人</label><div id="tag-people-list"></div></div>
+    <div style="margin-top:16px" id="activity-delete-row"></div>
+  </div>
+</div>
+
+<script>
+// ── Google Sheets ──
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUF_-DI1y7OngxeYdLYcsjHs2EJKPtqf1g-CKTj8ApA-q5m9Z0gJJHYs2imYNlBxSckQ/exec';
+const KEY_PEOPLE = 'fcc_people', KEY_NOTES = 'fcc_notes', KEY_ACTS = 'fcc_acts', KEY_STATUS = 'fcc_status';
+
+let people     = JSON.parse(localStorage.getItem(KEY_PEOPLE) || '[]');
+let notes      = JSON.parse(localStorage.getItem(KEY_NOTES)  || '[]');
+let activities = JSON.parse(localStorage.getItem(KEY_ACTS)   || '[]');
+let statuses   = JSON.parse(localStorage.getItem(KEY_STATUS) || '[]');
+
+function saveLocal() {
+  localStorage.setItem(KEY_PEOPLE, JSON.stringify(people));
+  localStorage.setItem(KEY_NOTES,  JSON.stringify(notes));
+  localStorage.setItem(KEY_ACTS,   JSON.stringify(activities));
+  localStorage.setItem(KEY_STATUS, JSON.stringify(statuses));
+}
+
+function serializeForSheets(acts) {
+  return acts.map(a => ({ ...a, people: Array.isArray(a.people) ? a.people.join(',') : (a.people || '') }));
+}
+
+async function save() {
+  saveLocal();
+  try {
+    await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'write', people, notes, activities: serializeForSheets(activities), statuses }) });
+  } catch(e) { console.warn('sync failed', e); }
+}
+
+async function loadFromSheets() {
+  showLoading(true);
+  try {
+    const res = await fetch(GAS_URL + '?action=read');
+    const data = await res.json();
+    if (data.people)     people     = data.people.map(deserialize);
+    if (data.notes)      notes      = data.notes.map(deserialize);
+    if (data.activities) activities = data.activities.map(deserialize);
+    if (data.statuses)   statuses   = data.statuses.map(deserialize);
+    saveLocal();
+  } catch(e) { console.warn('load failed, using local', e); }
+  showLoading(false);
+  renderHome();
+}
+
+function deserialize(obj) {
+  const o = {...obj};
+  if (o.createdAt) o.createdAt = Number(o.createdAt);
+  if (o.date)      o.date      = Number(o.date);
+  if (o.order !== undefined) o.order = Number(o.order);
+  if (o.people && typeof o.people === 'string') o.people = o.people ? o.people.split(',') : [];
+  return o;
+}
+
+function showLoading(show) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(17,17,17,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;font-size:14px;color:#BBBBBB;gap:12px;';
+    el.innerHTML = '<div style="width:32px;height:32px;border:3px solid #E0DDD8;border-top-color:#2D6A4F;border-radius:50%;animation:spin 0.8s linear infinite"></div>載入中…';
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
+
+// ── Helpers ──
+const CATS = ['全部','TCSH','NTOU EE','NTOU ORCH','NYCU','Tronfuture','Relatives'];
+const CAT_COLORS = { 'TCSH':'#0072B2','NTOU EE':'#009E73','NTOU ORCH':'#CC79A7','NYCU':'#D55E00','Tronfuture':'#E69F00','Relatives':'#56B4E9' };
+const CAT_DARK_BG = { 'TCSH':'#1A4A72','NTOU EE':'#1A5C48','NTOU ORCH':'#5C3060','NYCU':'#703000','Tronfuture':'#705500','Relatives':'#1E5580' };
+const FIXED_KEYS = ['工作','租屋','住處'];
+
+let currentCat = '全部', currentPage = 'home', currentPerson = null;
+let editingNoteId = null, editingPersonId = null, editingStatusId = null;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function timeAgo(ts) {
+  const d = Math.floor((Date.now()-ts)/86400000);
+  const h = Math.floor((Date.now()-ts)/3600000);
+  const m = Math.floor((Date.now()-ts)/60000);
+  if (d>365) return Math.floor(d/365)+'年前';
+  if (d>30)  return Math.floor(d/30)+'個月前';
+  if (d>0)   return d+'天前';
+  if (h>0)   return h+'小時前';
+  if (m>0)   return m+'分鐘前';
+  return '剛剛';
+}
+
+function fmtDate(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDateTime(ts) {
+  const d = new Date(ts);
+  return `${fmtDate(ts)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function escHTML(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function lastNoteTime(pid) {
+  const ns = notes.filter(n=>n.personId===pid);
+  return ns.length ? Math.max(...ns.map(n=>n.createdAt)) : null;
+}
+
+// ── Routing ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  currentPage = id; window.scrollTo(0,0);
+}
+function showTab(tab, el) {
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav .nav-tab').forEach(t=>{ if(tab==='more') t.classList.add('active'); });
+  el.classList.add('active');
+  if (tab==='home') { showPage('home'); renderHome(); }
+  else if (tab==='activities') { showPage('activities'); renderActivities(); }
+  else if (tab==='more') { showPage('more'); }
+}
+function goBack() { showPage('home'); renderHome(); }
+
+// ── HOME ──
+function renderHome() {
+  document.getElementById('cat-tabs').innerHTML = CATS.map(c=>{
+    const color = CAT_COLORS[c];
+    const isActive = c === currentCat;
+    const style = color && !isActive ? `style="background:${color};border-color:${color};color:#fff"` : '';
+    return `<button class="cat-btn ${isActive?'active':''}" ${style} onclick="setCat('${c}')">${c}</button>`;
+  }).join('');
+
+  let list = currentCat==='全部' ? people : people.filter(p=>p.cat===currentCat);
+  list = [...list].sort((a,b)=>(lastNoteTime(b.id)||b.createdAt)-(lastNoteTime(a.id)||a.createdAt));
+
+  const grid = document.getElementById('cards-grid');
+  if (!list.length) { grid.innerHTML=`<div class="empty" style="grid-column:1/-1">還沒有聯絡人<br>點右上角「＋ 新增」開始吧</div>`; return; }
+
+  grid.innerHTML = list.map(p => {
+    const last = lastNoteTime(p.id);
+    const color = CAT_COLORS[p.cat]||'#888';
+    const bgColor = CAT_DARK_BG[p.cat] || '#1F1F1F';
+    return `<div class="person-card" onclick="openPerson('${p.id}')" style="background:${bgColor};border-left:3px solid ${color}">
+      <div class="card-name">${escHTML(p.name)}</div>
+      <div class="card-time">
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        ${last ? timeAgo(last) : '尚無記錄'}
+      </div>
+    </div>`;
+  }).join('');
+}
+function setCat(c) { currentCat=c; renderHome(); }
+
+// ── PERSON PAGE ──
+function openPerson(id) {
+  currentPerson = people.find(p=>p.id===id);
+  if (!currentPerson) return;
+  document.getElementById('person-topbar-name').textContent = currentPerson.name;
+  document.getElementById('person-name').textContent = currentPerson.name;
+  document.getElementById('person-cat').textContent = currentPerson.cat;
+  renderStatus(); renderNotes(); renderPersonActivities();
+  showPage('person');
+}
+
+// ── STATUS ──
+function renderStatus() {
+  const pid = currentPerson.id;
+  const fixedEl = document.getElementById('status-fixed');
+  const extraEl = document.getElementById('status-extra');
+
+  const chevron = `<svg class="status-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>`;
+
+  // Fixed keys
+  fixedEl.innerHTML = FIXED_KEYS.map(key => {
+    const s = statuses.find(x=>x.personId===pid && x.key===key);
+    const hasVal = s && s.val;
+    return `<div class="status-row" onclick="openEditFixedStatus('${key}')">
+      <div class="status-key">${key}</div>
+      <div class="status-val ${hasVal?'':'empty'}">${hasVal ? escHTML(s.val) : '點擊填寫'}</div>
+      ${chevron}
+    </div>`;
+  }).join('');
+
+  // Extra statuses
+  const extras = statuses.filter(x=>x.personId===pid && !FIXED_KEYS.includes(x.key));
+  if (extras.length) {
+    extraEl.style.display = '';
+    extraEl.innerHTML = extras.map(s=>`
+      <div class="status-extra-row" onclick="openEditExtraStatus('${s.id}')">
+        <div class="status-key">${escHTML(s.key)}</div>
+        <div class="status-val" style="flex:1">${escHTML(s.val)}</div>
+        ${chevron}
+      </div>`).join('');
+  } else {
+    extraEl.style.display = 'none';
+    extraEl.innerHTML = '';
+  }
+}
+
+function openEditFixedStatus(key) {
+  const pid = currentPerson.id;
+  const s = statuses.find(x=>x.personId===pid && x.key===key);
+  editingStatusId = s ? s.id : null;
+  document.getElementById('sheet-status-title').textContent = `編輯「${key}」`;
+  document.getElementById('f-status-key').value = key;
+  document.getElementById('f-status-key').disabled = true;
+  document.getElementById('f-status-val').value = s ? s.val : '';
+  document.getElementById('f-status-id').value = editingStatusId || '';
+  document.getElementById('status-delete-row').innerHTML = '';
+  openSheet('sheet-status');
+}
+
+function openAddStatus() {
+  editingStatusId = null;
+  document.getElementById('sheet-status-title').textContent = '新增狀態';
+  document.getElementById('f-status-key').value = '';
+  document.getElementById('f-status-key').disabled = false;
+  document.getElementById('f-status-val').value = '';
+  document.getElementById('f-status-id').value = '';
+  document.getElementById('status-delete-row').innerHTML = '';
+  openSheet('sheet-status');
+}
+
+function openEditExtraStatus(id) {
+  const s = statuses.find(x=>x.id===id);
+  if (!s) return;
+  editingStatusId = id;
+  document.getElementById('sheet-status-title').textContent = `編輯「${s.key}」`;
+  document.getElementById('f-status-key').value = s.key;
+  document.getElementById('f-status-key').disabled = false;
+  document.getElementById('f-status-val').value = s.val;
+  document.getElementById('f-status-id').value = id;
+  document.getElementById('status-delete-row').innerHTML = `<button class="btn btn-danger" onclick="deleteStatus('${id}')">刪除此項目</button>`;
+  openSheet('sheet-status');
+}
+
+function saveStatus() {
+  const key = document.getElementById('f-status-key').value.trim();
+  const val = document.getElementById('f-status-val').value.trim();
+  if (!key) { document.getElementById('f-status-key').focus(); return; }
+  const pid = currentPerson.id;
+
+  if (editingStatusId) {
+    const idx = statuses.findIndex(x=>x.id===editingStatusId);
+    if (idx>=0) { statuses[idx].key=key; statuses[idx].val=val; }
+  } else {
+    const existing = statuses.find(x=>x.personId===pid && x.key===key);
+    if (existing) { existing.val=val; }
+    else { statuses.push({ id:uid(), personId:pid, key, val }); }
+  }
+  save(); closeSheet('sheet-status');
+  document.getElementById('f-status-key').disabled = false;
+  renderStatus();
+}
+
+function deleteStatus(id) {
+  if (!confirm('確定刪除？')) return;
+  statuses = statuses.filter(x=>x.id!==id);
+  save(); closeSheet('sheet-status');
+  document.getElementById('f-status-key').disabled = false;
+  renderStatus();
+}
+
+// ── NOTES ──
+function getPersonNotes() {
+  const ns = notes.filter(n=>n.personId===currentPerson.id);
+  ns.sort((a,b)=>{
+    if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+    return b.createdAt - a.createdAt;
+  });
+  return ns;
+}
+
+function renderNotes() {
+  const list = getPersonNotes();
+  const el = document.getElementById('notes-list');
+  if (!list.length) { el.innerHTML=`<div class="empty">還沒有近況記錄<br>點右上角「＋ 新增」</div>`; return; }
+
+  el.innerHTML = list.map((n,i)=>`
+    <div class="note-item" onclick="openEditNote('${n.id}')">
+      <div class="note-item-body">
+        <div class="note-time">${fmtDateTime(n.createdAt)}</div>
+        <div class="note-text">${escHTML(n.text)}</div>
+      </div>
+      <div class="note-order-btns" onclick="event.stopPropagation()">
+        <button class="note-order-btn" onclick="moveNote('${n.id}',-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="note-order-btn" onclick="moveNote('${n.id}',1)" ${i===list.length-1?'disabled':''}>↓</button>
+      </div>
+    </div>`).join('');
+}
+
+function moveNote(id, dir) {
+  const list = getPersonNotes();
+  const idx = list.findIndex(n=>n.id===id);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= list.length) return;
+  // Swap the two items in the array
+  const tmp = list[idx];
+  list[idx] = list[newIdx];
+  list[newIdx] = tmp;
+  // Re-assign order values based on new positions
+  list.forEach((n, i) => { n.order = i; });
+  // Write back to notes array
+  list.forEach(n => {
+    const ni = notes.findIndex(x => x.id === n.id);
+    if (ni >= 0) notes[ni] = n;
+  });
+  save(); renderNotes();
+}
+
+function openAddNote() {
+  editingNoteId = null;
+  document.getElementById('sheet-note-title').textContent = '新增近況';
+  document.getElementById('f-note').value = '';
+  const delRow = document.getElementById('note-delete-row');
+  if (delRow) delRow.innerHTML = '';
+  openSheet('sheet-note');
+  setTimeout(()=>document.getElementById('f-note').focus(), 300);
+}
+
+function openEditNote(id) {
+  const n = notes.find(x=>x.id===id);
+  if (!n) return;
+  editingNoteId = id;
+  document.getElementById('sheet-note-title').textContent = '編輯近況';
+  document.getElementById('f-note').value = n.text;
+  const delRow = document.getElementById('note-delete-row');
+  if (delRow) delRow.innerHTML = `<button class="btn btn-danger" onclick="deleteNote('${id}')">刪除此記錄</button>`;
+  openSheet('sheet-note');
+}
+
+function saveNote() {
+  const text = document.getElementById('f-note').value.trim();
+  if (!text) return;
+  if (editingNoteId) {
+    const idx = notes.findIndex(n=>n.id===editingNoteId);
+    if (idx>=0) notes[idx].text = text;
+  } else {
+    const list = getPersonNotes();
+    notes.push({ id:uid(), personId:currentPerson.id, text, createdAt:Date.now(), order:0 });
+    // Shift existing orders down
+    list.forEach(n=>{ const ni=notes.findIndex(x=>x.id===n.id); if(ni>=0) notes[ni].order=(n.order||0)+1; });
+  }
+  save(); closeSheet('sheet-note'); renderNotes();
+}
+
+function deleteNote(id) {
+  if (!confirm('確定刪除這條記錄？')) return;
+  notes = notes.filter(n=>n.id!==id);
+  save(); closeSheet('sheet-note'); renderNotes();
+}
+
+// ── PERSON ACTIVITIES ──
+function renderPersonActivities() {
+  const acts = activities.filter(a=>a.people&&a.people.includes(currentPerson.id)).sort((a,b)=>b.date-a.date);
+  const el = document.getElementById('person-activities');
+  if (!acts.length) { el.innerHTML=`<div class="empty">還沒有一起的活動記錄</div>`; return; }
+  el.innerHTML = acts.map(a=>`
+    <div class="activity-item" onclick="openEditActivity('${a.id}')" style="cursor:pointer">
+      <div class="activity-date">${fmtDate(a.date)}</div>
+      <div class="activity-title">${escHTML(a.what)}</div>
+      ${a.place?`<div class="activity-place">📍 ${escHTML(a.place)}</div>`:''}
+    </div>`).join('');
+}
+
+// ── ACTIVITIES PAGE ──
+function renderActivities() {
+  const list = [...activities].sort((a,b)=>b.date-a.date);
+  const el = document.getElementById('activities-list');
+  if (!list.length) { el.innerHTML=`<div class="empty">還沒有活動記錄<br>點右下角「＋」新增</div>`; return; }
+  el.innerHTML = list.map(a=>{
+    const tagged = (a.people||[]).map(pid=>{ const p=people.find(x=>x.id===pid); if(!p) return ''; const col=CAT_COLORS[p.cat]||'#888'; const bg=CAT_DARK_BG[p.cat]||'#1F1F1F'; return `<span class="people-chip" style="background:${bg};color:${col};border:1px solid ${col}">${escHTML(p.name)}</span>`; }).join('');
+    return `<div class="activity-full-item" onclick="openEditActivity('${a.id}')" style="cursor:pointer">
+      <div class="activity-date">${fmtDate(a.date)}</div>
+      <div class="activity-title">${escHTML(a.what)}</div>
+      ${a.place?`<div class="activity-place">📍 ${escHTML(a.place)}</div>`:''}
+      ${tagged?`<div class="activity-people">${tagged}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── SHEETS ──
+function openSheet(id) { document.getElementById(id).classList.add('open'); }
+function closeSheet(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id==='sheet-status') document.getElementById('f-status-key').disabled=false;
+}
+
+function openAddPerson() {
+  editingPersonId = null;
+  document.getElementById('sheet-person-title').textContent = '新增聯絡人';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-cat').value = 'TCSH';
+  const delRow = document.getElementById('person-delete-row');
+  if (delRow) delRow.innerHTML = '';
+  openSheet('sheet-person');
+}
+
+function openEditPerson() {
+  if (!currentPerson) return;
+  editingPersonId = currentPerson.id;
+  document.getElementById('sheet-person-title').textContent = '編輯聯絡人';
+  document.getElementById('f-name').value = currentPerson.name;
+  document.getElementById('f-cat').value = currentPerson.cat;
+  const delRow = document.getElementById('person-delete-row');
+  if (delRow) delRow.innerHTML = `<button class="btn btn-danger" onclick="deletePerson('${currentPerson.id}')">刪除此聯絡人</button>`;
+  openSheet('sheet-person');
+}
+
+function deletePerson(id) {
+  if (!confirm('確定刪除這個聯絡人？\n相關的近況記錄和狀態也會一併刪除。')) return;
+  people     = people.filter(p=>p.id!==id);
+  notes      = notes.filter(n=>n.personId!==id);
+  statuses   = statuses.filter(s=>s.personId!==id);
+  activities = activities.map(a=>({ ...a, people:(a.people||[]).filter(pid=>pid!==id) }));
+  save(); closeSheet('sheet-person'); goBack();
+}
+
+function savePerson() {
+  const name = document.getElementById('f-name').value.trim();
+  const cat  = document.getElementById('f-cat').value;
+  if (!name) { document.getElementById('f-name').focus(); return; }
+  if (editingPersonId) {
+    const idx = people.findIndex(p=>p.id===editingPersonId);
+    if (idx>=0) { people[idx].name=name; people[idx].cat=cat; }
+    save(); closeSheet('sheet-person'); currentPerson=people[idx]; openPerson(editingPersonId);
+  } else {
+    people.push({ id:uid(), name, cat, createdAt:Date.now() });
+    save(); closeSheet('sheet-person'); renderHome();
+  }
+}
+
+let editingActivityId = null, activityEditSource = 'activities';
+
+function buildTagUI(selectedIds=[]) {
+  const container = document.getElementById('tag-people-list');
+  const cats = [...new Set(people.map(p=>p.cat))];
+  container.innerHTML = cats.map(c=>{
+    const cp = people.filter(p=>p.cat===c);
+    return `<div class="tag-cat-header">${c}</div><div class="tag-people">${cp.map(p=>`<button class="tag-person ${selectedIds.includes(p.id)?'selected':''}" data-id="${p.id}" onclick="toggleTag(this)">${escHTML(p.name)}</button>`).join('')}</div>`;
+  }).join('');
+}
+
+function openAddActivity() {
+  editingActivityId = null;
+  activityEditSource = currentPage;
+  document.getElementById('page-activity-edit-title').textContent = '記錄活動';
+  document.getElementById('f-act-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-act-place').value = '';
+  document.getElementById('f-act-what').value = '';
+  const delRow = document.getElementById('activity-delete-row');
+  if (delRow) delRow.innerHTML = '';
+  buildTagUI();
+  showPage('activity-edit');
+}
+
+function openEditActivity(id) {
+  const a = activities.find(x=>x.id===id);
+  if (!a) return;
+  editingActivityId = id;
+  activityEditSource = currentPage;
+  document.getElementById('page-activity-edit-title').textContent = '編輯活動';
+  document.getElementById('f-act-date').value = new Date(a.date).toISOString().slice(0,10);
+  document.getElementById('f-act-place').value = a.place || '';
+  document.getElementById('f-act-what').value = a.what || '';
+  const delRow = document.getElementById('activity-delete-row');
+  if (delRow) delRow.innerHTML = `<button class="btn btn-danger" onclick="deleteActivity('${id}')">刪除此活動</button>`;
+  buildTagUI(a.people || []);
+  showPage('activity-edit');
+}
+
+function closeActivityEdit() {
+  if (activityEditSource === 'person') { showPage('person'); }
+  else { showPage('activities'); renderActivities(); }
+}
+
+function deleteActivity(id) {
+  if (!confirm('確定刪除這筆活動？')) return;
+  activities = activities.filter(a=>a.id!==id);
+  save(); closeActivityEdit();
+  if (currentPage==='activities') renderActivities();
+  if (currentPage==='person'&&currentPerson) renderPersonActivities();
+}
+
+function toggleTag(el) { el.classList.toggle('selected'); }
+
+function saveActivity() {
+  const dateStr = document.getElementById('f-act-date').value;
+  const place   = document.getElementById('f-act-place').value.trim();
+  const what    = document.getElementById('f-act-what').value.trim();
+  if (!what) { document.getElementById('f-act-what').focus(); return; }
+  const tagged = [...document.querySelectorAll('.tag-person.selected')].map(el=>el.dataset.id);
+  const date   = dateStr ? new Date(dateStr).getTime() : Date.now();
+  if (editingActivityId) {
+    const idx = activities.findIndex(a=>a.id===editingActivityId);
+    if (idx>=0) { activities[idx] = { ...activities[idx], date, place, what, people:tagged }; }
+  } else {
+    activities.push({ id:uid(), date, place, what, people:tagged, createdAt:Date.now() });
+  }
+  save(); closeActivityEdit();
+  if (currentPage==='activities') renderActivities();
+  if (currentPage==='person'&&currentPerson) renderPersonActivities();
+}
+
+['sheet-person','sheet-note','sheet-status'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeSheet(id); });
+});
+
+// ── Swipe back gesture ──
+let swipeStartX = 0, swipeStartY = 0;
+document.addEventListener('touchstart', e => {
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
+  if (swipeStartX < 40 && dx > 80 && dy < 80) {
+    if (currentPage === 'person') goBack();
+    else if (currentPage === 'activity-edit') closeActivityEdit();
+  }
+}, { passive: true });
+
+// ── Export / Import ──
+function exportData() {
+  const data = { people, notes, activities, statuses, exportedAt:Date.now() };
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`friends-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.people||!data.notes||!data.activities) { alert('檔案格式不對'); return; }
+      if (!confirm(`匯入後會覆蓋現有資料。\n共有 ${data.people.length} 位聯絡人。\n確定匯入嗎？`)) return;
+      people=data.people; notes=data.notes; activities=data.activities; statuses=data.statuses||[];
+      save(); renderHome(); alert('匯入成功！');
+    } catch(err) { alert('讀取失敗'); }
+  };
+  reader.readAsText(file); e.target.value='';
+}
+
+// ── Init ──
+loadFromSheets();
+</script>
+</body>
+</html>
