@@ -394,7 +394,6 @@ async function save() {
 }
 
 async function loadFromSheets() {
-  showLoading(true);
   try {
     const res = await fetch(GAS_URL + '?action=read');
     const data = await res.json();
@@ -404,7 +403,6 @@ async function loadFromSheets() {
     if (data.statuses)   statuses   = data.statuses.map(deserialize);
     saveLocal();
   } catch(e) { console.warn('load failed, using local', e); }
-  showLoading(false);
   renderHome();
 }
 
@@ -640,7 +638,6 @@ function renderNotes() {
   el.innerHTML = list.map((n,i)=>`
     <div class="note-item" onclick="openEditNote('${n.id}')">
       <div class="note-item-body">
-        <div class="note-time">${fmtDateTime(n.createdAt)}</div>
         <div class="note-text">${escHTML(n.text)}</div>
       </div>
       <div class="note-order-btns" onclick="event.stopPropagation()">
@@ -908,6 +905,7 @@ function importData(e) {
 }
 
 // ── Init ──
+renderHome();
 loadFromSheets();
 </script>
 </body>
